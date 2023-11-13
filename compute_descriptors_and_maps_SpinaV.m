@@ -9,8 +9,8 @@ k1 = 100;
 k2 = 100;
 
 % params to compute WKS or descriptors
-numTimesGlobalDescriptors = 200;
-numSkipGlobalDescriptors = 10;
+numTimesGlobalDescriptors = 100;
+numSkipGlobalDescriptors = 1;
 
 % relative weights of different terms to optimize a functional map
 para.a = 2e-1;
@@ -222,14 +222,14 @@ for nbMethod = 1:length(listMethods)
         lm_idx_Source = lm_idx(:,2);
 
         % Compute the landmarks based descriptors using compute_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip)
-        timesteps_lm = 10;
+        timesteps_lm = 100;
 
         %compute_chosen_local_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip, method)
         numEigs = 100;
         lm_fct_Target = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeTarget,numEigs,lm_idx_Target,timesteps_lm,1, method);
         lm_fct_Source = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeSource,numEigs,lm_idx_Source,timesteps_lm,1, method);
 
-        num_skip = 1;
+        num_skip = 15;
         % % Keep first values and then regularly skip values
         % nb_lm = size(lm_idx,1);
         % skip_timestep_lm = 1;
