@@ -213,6 +213,9 @@ for nbMethod = 1:length(listMethods)
         shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
         shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
 
+        BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
+        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2); 
+
         % load landmarks indices
         landmarks_file = ['../data/' listFolders{i} '/landmarks.txt'];
         lm_idx = load(landmarks_file)+1;
@@ -277,6 +280,26 @@ for nbMethod = 1:length(listMethods)
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
+        %% Choose the descriptors to use for the functional map
+        fctTarget = [lm_fct_Target]; %fctTarget = [fctTarget,lm_fct_Target];
+        fctSource = [lm_fct_Source]; %fctSource = [fctSource,lm_fct_Source];
+
+        %% optimize the functional map using the standard or the complex resolvent Laplacian term
+        [C_target2source, M_old] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+        [C_target2source_slant, M_slant] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
+        [C_target2source_new, M_new] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
+        T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
+        T_source2target_slant = fMAP.fMap2pMap(BTarget,BSource,C_target2source_slant);
+        T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
+
+        % visualize the computed maps
+        figure('Name', ['Folder ' listFolders{i} ' - FM using local descriptors ' method],'NumberTitle','off');
+        subplot(1,3,1);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
+        subplot(1,3,2);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant,plotOptions{:}); title('slanted Mask');
+        subplot(1,3,3);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
     end
 end
 
