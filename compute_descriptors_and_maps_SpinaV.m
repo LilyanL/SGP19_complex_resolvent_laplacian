@@ -111,7 +111,7 @@ end
 %     numRows = ceil(sqrt(numPlots));
 %     numCols = ceil(numPlots / numRows);
 % 
-%     figure('Name', ['Basis functions - Folder ' listFolders{i} '- Source'],'NumberTitle','off');
+%     figure('Name', ['Folder ' listFolders{i}  '- Basis functions '  ' - Source'],'NumberTitle','off');
 %     for j = 1:numPlots
 %         subplot(numRows, numCols, j);
 %         h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), BSource(:,j), 'FaceColor', 'interp');
@@ -120,7 +120,7 @@ end
 %         title(['Basis function ' num2str(j)]);
 %     end
 % 
-%     figure('Name', ['Basis functions - Folder ' listFolders{i} '- Target'],'NumberTitle','off');
+%     figure('Name', ['Folder ' listFolders{i}  '- Basis functions ' ' - Target'],'NumberTitle','off');
 %     for j = 1:numPlots
 %         subplot(numRows, numCols, j);
 %         h = trisurf(shapeTarget.surface.TRIV, shapeTarget.surface.VERT(:,1), shapeTarget.surface.VERT(:,2), shapeTarget.surface.VERT(:,3), BTarget(:,j), 'FaceColor', 'interp');
@@ -171,7 +171,7 @@ for nbMethod = 1:length(listMethods)
         numRows = ceil(sqrt(numPlots));
         numCols = ceil(numPlots / numRows);
         
-        figure('Name', ['Global descriptors ' method ' - Folder ' listFolders{i} '- Source'],'NumberTitle','off');
+        figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Source'],'NumberTitle','off');
         for j = 1:numPlots
             numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
@@ -181,7 +181,7 @@ for nbMethod = 1:length(listMethods)
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
-        figure('Name', ['Global descriptors ' method ' - Folder ' listFolders{i} '- Target'],'NumberTitle','off');
+        figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Target'],'NumberTitle','off');
         for j = 1:numPlots
             numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
@@ -257,7 +257,7 @@ for nbMethod = 1:length(listMethods)
         numRows = ceil(sqrt(numPlots));
         numCols = ceil(numPlots / numRows);
 
-        figure('Name', ['Local descriptors ' method ' - Folder ' listFolders{i} '- Source'],'NumberTitle','off');
+        figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Source'],'NumberTitle','off');
         for j = 1:numPlots
             numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
@@ -267,7 +267,7 @@ for nbMethod = 1:length(listMethods)
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
-        figure('Name', ['Local descriptors ' method ' - Folder ' listFolders{i} '- Target'],'NumberTitle','off');
+        figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Target'],'NumberTitle','off');
         for j = 1:numPlots
             numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
