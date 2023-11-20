@@ -12,27 +12,29 @@ meshOptions = {'IfComputeGeoDist',false,'IfComputeLB',true,'IfComputeNormals',tr
 % params to visualize the maps
 plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
-%% Select and load the meshes using the GUI
-[file,path] = uigetfile('*.off','Select the shape to load');
+%% Select and load the source meshe using the GUI
+isLoadedSource = false;
+[file,path] = uigetfile('*.off','Select the source shape to load');
 if isequal(file,0)
     disp('User selected Cancel');
     return;
 else
+    isLoadedSource = true;
     disp(['User selected ', fullfile(path,file)]);
 end
 
 % load the mesh
-shape = MESH.MESH_IO.read_shape([path, file]);
+shapeSource = MESH.MESH_IO.read_shape([path, file]);
 
 % center data
-shape.surface.VERT = shape.surface.VERT - mean(shape.surface.VERT);
+shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
 
 % preprocess the mesh
-shape = MESH.preprocess(shape,meshOptions{:});
+shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
 
 % compute eigenvecs and eigenvalues
-B = shape.evecs(:,1:k1); 
-Ev = shape.evals(1:k1);
+B = shapeSource.evecs(:,1:k1); 
+Ev = shapeSource.evals(1:k1);
 
 %% Select a 3D point on the mesh using the GUI and compute the descriptors
 % select a point on the mesh
@@ -43,11 +45,11 @@ HKSFigure = figure(3);
 figure(1);
 title('Select the entry point');
 subplot(2,2, [1 3]);
-h = trisurf(shape.surface.TRIV, shape.surface.VERT(:,1), shape.surface.VERT(:,2), shape.surface.VERT(:,3), 'FaceColor', 'interp', 'EdgeColor', 'none');
+h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), 'FaceColor', 'interp', 'EdgeColor', 'none');
 alpha(0.5);
 hold on;
 
-pointCloud = shape.surface.VERT';
+pointCloud = shapeSource.surface.VERT';
 % set the callback, pass pointCloud to the callback function
 %set(selectionFigure, 'WindowButtonDownFcn', {@callbackClickA3DPoint, pointCloud}); 
 
@@ -117,9 +119,9 @@ while (ishandle(selectionFigure) || ishandle(WKSFigure)||ishandle(HKSFigure))
     %compute_chosen_local_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip, method)
     numEigs = 100;
     method = 'WKS';
-    lm_fct_WKS = fMAP.compute_chosen_local_descriptors_with_landmarks(shape,numEigs,lm_idx,timesteps_lm,1, method);
+    lm_fct_WKS = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeSource,numEigs,lm_idx,timesteps_lm,1, method);
     method = 'HKS';
-    lm_fct_HKS = fMAP.compute_chosen_local_descriptors_with_landmarks(shape,numEigs,lm_idx,timesteps_lm,1, method);
+    lm_fct_HKS = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeSource,numEigs,lm_idx,timesteps_lm,1, method);
 
     % ignore some of the descriptors
     skip_lm_step = 4;
@@ -132,14 +134,14 @@ while (ishandle(selectionFigure) || ishandle(WKSFigure)||ishandle(HKSFigure))
 
     %% Display the descriptors
     subplot(2,2, 2);
-    h = trisurf(shape.surface.TRIV, shape.surface.VERT(:,1), shape.surface.VERT(:,2), shape.surface.VERT(:,3), lm_fct_WKS(:,1), 'FaceColor', 'interp');
+    h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), lm_fct_WKS(:,1), 'FaceColor', 'interp');
     set(h, 'edgecolor', 'none');
     axis equal; axis off; hold on;
     title(['First descriptor WKS']);
     colorbar;
 
     subplot(2,2, 4);
-    h = trisurf(shape.surface.TRIV, shape.surface.VERT(:,1), shape.surface.VERT(:,2), shape.surface.VERT(:,3), lm_fct_HKS(:,1), 'FaceColor', 'interp');
+    h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), lm_fct_HKS(:,1), 'FaceColor', 'interp');
     set(h, 'edgecolor', 'none');
     axis equal; axis off; hold on;
     title(['First descriptor HKS']);
@@ -153,7 +155,7 @@ while (ishandle(selectionFigure) || ishandle(WKSFigure)||ishandle(HKSFigure))
         for j = 1:numPlots
             numberOfDescriptor = 1+(j-1)*skip_lm_step;
             subplot(numRows, numCols, j);
-            h = trisurf(shape.surface.TRIV, shape.surface.VERT(:,1), shape.surface.VERT(:,2), shape.surface.VERT(:,3), lm_fct_WKS(:,j), 'FaceColor', 'interp');
+            h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), lm_fct_WKS(:,j), 'FaceColor', 'interp');
             set(h, 'edgecolor', 'none');
             axis equal; axis off; hold on;
             title(['Descriptor ' num2str(numberOfDescriptor)]);
@@ -163,7 +165,7 @@ while (ishandle(selectionFigure) || ishandle(WKSFigure)||ishandle(HKSFigure))
         for j = 1:numPlots
             numberOfDescriptor = 1+(j-1)*skip_lm_step;
             subplot(numRows, numCols, j);
-            h = trisurf(shape.surface.TRIV, shape.surface.VERT(:,1), shape.surface.VERT(:,2), shape.surface.VERT(:,3), lm_fct_HKS(:,j), 'FaceColor', 'interp');
+            h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), lm_fct_HKS(:,j), 'FaceColor', 'interp');
             set(h, 'edgecolor', 'none');
             axis equal; axis off; hold on;
             title(['Descriptor ' num2str(numberOfDescriptor)]);
