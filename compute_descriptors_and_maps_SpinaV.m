@@ -3,14 +3,22 @@ clc; clear all; % close all;
 set(0,'DefaultFigureWindowStyle','docked') % docked or normal
 dbstop if error % debug mode
 
+% create folders to export results and figures
+mkdir results;
+destinationFolder = './results/';
+
+% Create a subfolder to store the maps
+maps_dir = [destinationFolder 'maps/'];
+mkdir(maps_dir);
+
 %% some parameters
 % fmap size: k2-by-k1
 k1 = 100;
 k2 = 100;
 
 % params to compute WKS or descriptors
-numTimesGlobalDescriptors = 100;
-numSkipGlobalDescriptors = 1;
+numTimesGlobalDescriptors = 200;
+numSkipGlobalDescriptors = 20;
 
 % relative weights of different terms to optimize a functional map
 para.a = 2e-1;
@@ -300,7 +308,23 @@ for nbMethod = 1:length(listMethods)
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant,plotOptions{:}); title('slanted Mask');
         subplot(1,3,3);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
+
+        % export the maps to text files for later use
+        map_name = [maps_dir 'map_' listFolders{i} '_' method '_standard.txt'];
+        dlmwrite(map_name, T_source2target, 'delimiter', ' ');
+        map_name = [maps_dir 'map_' listFolders{i} '_' method '_slant.txt'];
+        dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
+        map_name = [maps_dir 'map_' listFolders{i} '_' method '_complRes.txt'];
+        dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
+
     end
 end
+
+
+%% Export all figures
+saveAllFigures(destinationFolder, 'png');
+
+%% Check memory
+memory
 
         
