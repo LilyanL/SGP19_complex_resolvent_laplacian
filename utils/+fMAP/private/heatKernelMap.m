@@ -9,7 +9,7 @@ for li=1:length(landmarks)
     segment = zeros(size(laplaceBasis,1),1);
     segment(landmarks(li)) = 1;
     
-    log_ts = linspace(log(0.005), log(0.2), numTimes);
+    log_ts = linspace(log(0.00001), log(100.0), numTimes);
     ts = exp(log_ts);
     
     N = size(laplaceBasis,2);    
