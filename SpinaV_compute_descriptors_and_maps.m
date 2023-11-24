@@ -99,12 +99,35 @@ for i = 1:length(listFolders)
         text(shapeTarget.surface.VERT(lm_idx_Target(j),1), shapeTarget.surface.VERT(lm_idx_Target(j),2), shapeTarget.surface.VERT(lm_idx_Target(j),3), num2str(j), 'FontSize', 14);
     end
 
+    % If '/drilling_paths.txt' exists, load the drilling paths
+    readPaths = [];
+    drillingIndex_entry = [];
+    drillingIndex_exit = [];
+    drilling_paths_file = [mesh_dir 'drilling_paths_source.txt'];
+    if exist(drilling_paths_file, 'file') == 2
+        readPaths = readmatrix([mesh_dir 'drilling_paths_source.txt']);
+        drillingIndex_entry = readPaths(:,1);
+        drillingIndex_exit = readPaths(:,2);
+    end
+
+    % Plot the drilling paths if they exist
+    subplot(1,2,2);
+    colorMap = jet(length(drillingIndex_entry));
+    for j = 1:length(drillingIndex_entry)
+        entryPoint = shapeTarget.surface.VERT(drillingIndex_entry(j),:);
+        endPoint = shapeTarget.surface.VERT(drillingIndex_exit(j),:);
+        plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
+    end
+
     % Store all useful data in the PairShapes object
     curPairShapes.shape_source = shapeSource;
     curPairShapes.shape_target = shapeTarget;
 
     curPairShapes.landmarks_source = lm_idx_Source;
     curPairShapes.landmarks_target = lm_idx_Target;
+
+    curPairShapes.trajectories_source = readPaths;
+
     % Store the PairShapes object in the array
     pairs_array{i} = curPairShapes;
 
@@ -244,17 +267,6 @@ for nbMethod = 1:length(listMethods)
         lm_fct_Source = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeSource,numEigs,lm_idx_Source,timesteps_lm,1, method);
 
         num_skip = 15;
-        % % Keep first values and then regularly skip values
-        % nb_lm = size(lm_idx,1);
-        % skip_timestep_lm = 1;
-        % total_skip_lm = skip_timestep_lm * nb_lm;
-        % initial_idx = 1:nb_lm;
-        % idx = initial_idx;
-        % 
-        % for skipStep=1:(timesteps_lm/skip_timestep_lm-1)
-        %     idx = [idx, initial_idx + skipStep*total_skip_lm];
-        % end
-
         firstTimeSteps = 1+(1- 1:(size(lm_idx,1)))*timesteps_lm;
         idx=[];
         for lm_nb = 1:size(lm_idx,1)
@@ -338,6 +350,46 @@ for nbMethod = 1:length(listMethods)
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant,plotOptions{:}); title('slanted Mask');
         subplot(1,3,3);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
+
+        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
+        figure('Name', ['Folder ' listFolders{i} ' - FM using local descriptors ' method ' and drilling paths'],'NumberTitle','off');
+
+        %Display both shapes with their landmarks
+        plotName = ['Shapes with landmarks - Folder ' listFolders{i}];
+        subplot(1,2,1);
+        display_shape(shapeSource);
+        title(['Source shape (' listFolders{i} ')']);
+
+        subplot(1,2,2);
+        display_shape(shapeTarget);
+        title(['Target shape (' listFolders{i} ')']);
+
+        % Get the drilling paths from the PairShapes object for the target shape
+        drillingIndex_entry_source = curPairShapes.trajectories_source(:,1);
+        drillingIndex_exit_source = curPairShapes.trajectories_source(:,2);
+
+        % Compute the entry and exit points of the drilling paths on the source shape using the mapping
+        drillingIndex_entry_target = T_source2target_new(drillingIndex_entry_source);
+        drillingIndex_exit_target = T_source2target_new(drillingIndex_exit_source);
+
+        
+        % Plot the drilling paths on the source shape
+        subplot(1,2,1);
+        colorMap = jet(length(drillingIndex_entry_source));
+        for j = 1:length(drillingIndex_entry_source)
+            entryPoint = shapeSource.surface.VERT(drillingIndex_entry_source(j),:);
+            endPoint = shapeSource.surface.VERT(drillingIndex_exit_source(j),:);
+            plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
+        end
+
+        % Plot the drilling paths on the target shape
+        subplot(1,2,2);
+        colorMap = jet(length(drillingIndex_entry_target));
+        for j = 1:length(drillingIndex_entry_target)
+            entryPoint = shapeTarget.surface.VERT(drillingIndex_entry_target(j),:);
+            endPoint = shapeTarget.surface.VERT(drillingIndex_exit_target(j),:);
+            plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
+        end
 
         % export the maps to text files for later use
         map_name = [maps_dir 'map_' listFolders{i} '_' method '_standard.txt'];
