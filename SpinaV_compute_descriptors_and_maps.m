@@ -64,9 +64,7 @@ for i = 1:length(listFolders)
     plotName = ['Shapes with landmarks - Folder ' listFolders{i}];
     figure('Name', plotName,'NumberTitle','off');
     subplot(1,2,1);
-    h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), 'FaceColor', 'interp');
-    set(h, 'edgecolor', 'none');
-    axis equal; axis off; hold on;
+    display_shape(shapeSource);
     scatter3(shapeSource.surface.VERT(lm_idx_Source,1), shapeSource.surface.VERT(lm_idx_Source,2), shapeSource.surface.VERT(lm_idx_Source,3), 100, colorMap, 'filled');
     title(['Source shape (' listFolders{i} ')']);
 
@@ -81,9 +79,7 @@ for i = 1:length(listFolders)
     annotation('textbox',dim,'String',str,'FitBoxToText','on');
 
     subplot(1,2,2);
-    h = trisurf(shapeTarget.surface.TRIV, shapeTarget.surface.VERT(:,1), shapeTarget.surface.VERT(:,2), shapeTarget.surface.VERT(:,3), 'FaceColor', 'interp');
-    set(h, 'edgecolor', 'none');
-    axis equal; axis off; hold on;
+    display_shape(shapeTarget);
     scatter3(shapeTarget.surface.VERT(lm_idx_Target,1), shapeTarget.surface.VERT(lm_idx_Target,2), shapeTarget.surface.VERT(lm_idx_Target,3), 100, colorMap, 'filled');
     title(['Target shape (' listFolders{i} ')']);
 
@@ -178,14 +174,12 @@ for nbMethod = 1:length(listMethods)
         numPlots = size(fctTarget,2);
         numRows = ceil(sqrt(numPlots));
         numCols = ceil(numPlots / numRows);
-        
+
         figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Source'],'NumberTitle','off');
         for j = 1:numPlots
             numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
-            h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), fctSource(:,j), 'FaceColor', 'interp');
-            set(h, 'edgecolor', 'none');
-            axis equal; axis off; hold on;
+            display_shape(shapeSource, fctSource(:,j));
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
@@ -193,9 +187,7 @@ for nbMethod = 1:length(listMethods)
         for j = 1:numPlots
             numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
-            h = trisurf(shapeTarget.surface.TRIV, shapeTarget.surface.VERT(:,1), shapeTarget.surface.VERT(:,2), shapeTarget.surface.VERT(:,3), fctTarget(:,j), 'FaceColor', 'interp');
-            set(h, 'edgecolor', 'none');
-            axis equal; axis off; hold on;
+            display_shape(shapeTarget, fctTarget(:,j));
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
@@ -272,9 +264,7 @@ for nbMethod = 1:length(listMethods)
         for j = 1:numPlots
             numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
-            h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), lm_fct_Source(:,j), 'FaceColor', 'interp');
-            set(h, 'edgecolor', 'none');
-            axis equal; axis off; hold on;
+            display_shape(shapeSource, lm_fct_Source(:,j));
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
@@ -282,9 +272,7 @@ for nbMethod = 1:length(listMethods)
         for j = 1:numPlots
             numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
             subplot(numRows, numCols, j);
-            h = trisurf(shapeTarget.surface.TRIV, shapeTarget.surface.VERT(:,1), shapeTarget.surface.VERT(:,2), shapeTarget.surface.VERT(:,3), lm_fct_Target(:,j), 'FaceColor', 'interp');
-            set(h, 'edgecolor', 'none');
-            axis equal; axis off; hold on;
+            display_shape(shapeTarget, lm_fct_Target(:,j));
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
