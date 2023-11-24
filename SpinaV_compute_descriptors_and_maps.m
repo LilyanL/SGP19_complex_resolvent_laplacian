@@ -11,6 +11,9 @@ destinationFolder = './results/';
 maps_dir = [destinationFolder 'maps/'];
 mkdir(maps_dir);
 
+% Initialization to store data
+pairs_array = {};
+
 %% some parameters
 % fmap size: k2-by-k1
 k1 = 100;
@@ -40,18 +43,26 @@ listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+
 
 %% Display all the pairs of meshes and landmarks
 for i = 1:length(listFolders)
+
+    curPairShapes = PairShapes;
+
+    %% Load the meshes
     mesh_dir = ['../data/' listFolders{i} '/'];
     shapeTarget_name = 'target.off';
     shapeSource_name = 'source.off';
     shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
     shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-    
+
     %% center data
     shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
     shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
 
+    % preprocess the meshes
+    shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
+    shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
+
     landmarks_file = ['../data/' listFolders{i} '/landmarks.txt'];
-    lm_idx = load(landmarks_file)+1;
+    lm_idx = load(landmarks_file)+1; % +1 because matlab starts indexing at 1
 
     % Column 1 corresponds to the landmarks indices for the target shape and column 2 for the source shape
     lm_idx_Target = lm_idx(:,1);
@@ -88,6 +99,15 @@ for i = 1:length(listFolders)
         text(shapeTarget.surface.VERT(lm_idx_Target(j),1), shapeTarget.surface.VERT(lm_idx_Target(j),2), shapeTarget.surface.VERT(lm_idx_Target(j),3), num2str(j), 'FontSize', 14);
     end
 
+    % Store all useful data in the PairShapes object
+    curPairShapes.shape_source = shapeSource;
+    curPairShapes.shape_target = shapeTarget;
+
+    curPairShapes.landmarks_source = lm_idx_Source;
+    curPairShapes.landmarks_target = lm_idx_Target;
+    % Store the PairShapes object in the array
+    pairs_array{i} = curPairShapes;
+
 end
 
 %% Compute and display the basis functions for each shape
@@ -97,24 +117,24 @@ end
 %     shapeSource_name = 'source.off';
 %     shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
 %     shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-% 
+%
 %     % center data
 %     shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
 %     shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
-% 
+%
 %     % preprocess the meshes
 %     shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
 %     shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
-% 
+%
 %     % compute descriptors
 %     BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-%     EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2); 
-% 
+%     EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
+%
 %     % plot the descriptors
 %     numPlots = k1;
 %     numRows = ceil(sqrt(numPlots));
 %     numCols = ceil(numPlots / numRows);
-% 
+%
 %     figure('Name', ['Folder ' listFolders{i}  '- Basis functions '  ' - Source'],'NumberTitle','off');
 %     for j = 1:numPlots
 %         subplot(numRows, numCols, j);
@@ -123,7 +143,7 @@ end
 %         axis equal; axis off; hold on;
 %         title(['Basis function ' num2str(j)]);
 %     end
-% 
+%
 %     figure('Name', ['Folder ' listFolders{i}  '- Basis functions ' ' - Target'],'NumberTitle','off');
 %     for j = 1:numPlots
 %         subplot(numRows, numCols, j);
@@ -132,37 +152,29 @@ end
 %         axis equal; axis off; hold on;
 %         title(['Basis function ' num2str(j)]);
 %     end
-% 
+%
 % end
 
 %% For each method, compute the global descriptors for each shape
 for nbMethod = 1:length(listMethods)
     method = listMethods{nbMethod};
     fprintf('Computing global %s descriptors for each shape...\n', method);
+
     for i = 1:length(listFolders)
-        mesh_dir = ['../data/' listFolders{i} '/'];
-        shapeTarget_name = 'target.off';
-        shapeSource_name = 'source.off';
-        shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
-        shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-
-        % center data
-        shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
-        shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
-
-        % preprocess the meshes
-        shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
-        shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
+        % load the pair of shapes from the array
+        curPairShapes = pairs_array{i};
+        shapeSource = curPairShapes.shape_source;
+        shapeTarget = curPairShapes.shape_target;
 
         % compute descriptors
         BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2); 
+        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
         if strcmp(method, 'WKS')
             fctTarget_all = fMAP.waveKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimesGlobalDescriptors);
             fctSource_all = fMAP.waveKernelSignature(BSource, EvSource, shapeSource.A, numTimesGlobalDescriptors);
         elseif strcmp(method, 'HKS')
-            fctTarget_all = heatKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimesGlobalDescriptors); 
+            fctTarget_all = heatKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimesGlobalDescriptors);
             fctSource_all = heatKernelSignature(BSource, EvSource, shapeSource.A, numTimesGlobalDescriptors);
         end
 
@@ -191,6 +203,17 @@ for nbMethod = 1:length(listMethods)
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
+        % Store the descriptors in the PairShapes object
+        curPairShapes.descriptors_global_source{nbMethod} = fctSource;
+        curPairShapes.descriptors_global_target{nbMethod} = fctTarget;
+
+        % Store the descriptors labels in the PairShapes object (WKS or HKS)
+        curPairShapes.descriptors_global_source_labels{nbMethod} = method;
+        curPairShapes.descriptors_global_target_labels{nbMethod} = method;
+
+        % Update the pair of shapes in the array
+        pairs_array{i} = curPairShapes;
+
     end
 end
 
@@ -199,30 +222,18 @@ for nbMethod = 1:length(listMethods)
     method = listMethods{nbMethod};
     fprintf('Computing local %s descriptors for each shape...\n', method);
     for i = 1:length(listFolders)
-        mesh_dir = ['../data/' listFolders{i} '/'];
-        shapeTarget_name = 'target.off';
-        shapeSource_name = 'source.off';
-        shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
-        shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-        
-        % center data
-        shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
-        shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
+        % load the pair of shapes from the array
+        curPairShapes = pairs_array{i};
+        shapeSource = curPairShapes.shape_source;
+        shapeTarget = curPairShapes.shape_target;
 
-        % preprocess the meshes
-        shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
-        shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
-
+        % compute descriptors
         BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2); 
-
-        % load landmarks indices
-        landmarks_file = ['../data/' listFolders{i} '/landmarks.txt'];
-        lm_idx = load(landmarks_file)+1;
+        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
         % Column 1 corresponds to the landmarks indices for the target shape and column 2 for the source shape
-        lm_idx_Target = lm_idx(:,1);
-        lm_idx_Source = lm_idx(:,2);
+        lm_idx_Target = curPairShapes.landmarks_target;
+        lm_idx_Source = curPairShapes.landmarks_source;
 
         % Compute the landmarks based descriptors using compute_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip)
         timesteps_lm = 100;
@@ -276,17 +287,48 @@ for nbMethod = 1:length(listMethods)
             title(['Descriptor ' num2str(numberOfDescriptor)]);
         end
 
-        %% Choose the descriptors to use for the functional map
-        fctTarget = [lm_fct_Target]; %fctTarget = [fctTarget,lm_fct_Target];
-        fctSource = [lm_fct_Source]; %fctSource = [fctSource,lm_fct_Source];
+        % Store the descriptors in the PairShapes object
+        curPairShapes.descriptors_local_source{nbMethod} = lm_fct_Source;
+        curPairShapes.descriptors_local_target{nbMethod} = lm_fct_Target;
 
-        %% optimize the functional map using the standard or the complex resolvent Laplacian term
+        % Store the descriptors labels in the PairShapes object (WKS or HKS)
+        curPairShapes.descriptors_local_source_labels{nbMethod} = method;
+        curPairShapes.descriptors_local_target_labels{nbMethod} = method;
+
+        % Update the pair of shapes in the array
+        pairs_array{i} = curPairShapes;
+    end
+
+    %% Compute the functional maps using different descriptors
+    for i = 1:length(listFolders)
+        % load the pair of shapes from the array
+        curPairShapes = pairs_array{i};
+
+        shapeSource = curPairShapes.shape_source;
+        shapeTarget = curPairShapes.shape_target;
+
+        % load the descriptors from the PairShapes object
+        fctTarget = curPairShapes.descriptors_local_target{nbMethod};
+        fctSource = curPairShapes.descriptors_local_source{nbMethod};
+
+        % optimize the functional map using the standard or the complex resolvent Laplacian term
+
+        fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', method);
         [C_target2source, M_old] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+
+        fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', method);
         [C_target2source_slant, M_slant] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
+
+        fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', method);
         [C_target2source_new, M_new] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
+
         T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
         T_source2target_slant = fMAP.fMap2pMap(BTarget,BSource,C_target2source_slant);
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
+
+        % Store the mappings in the PairShapes object
+        curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
+        curPairShapes.mappings_Labels{nbMethod} ={[method ' - standard'], [method ' - slant'], [method ' - complRes']};
 
         % visualize the computed maps
         figure('Name', ['Folder ' listFolders{i} ' - FM using local descriptors ' method],'NumberTitle','off');
@@ -314,5 +356,3 @@ saveAllFigures(destinationFolder, 'png');
 
 %% Check memory
 memory
-
-        
