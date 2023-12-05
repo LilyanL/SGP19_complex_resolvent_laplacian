@@ -210,20 +210,22 @@ for nbMethod = 1:length(listMethods)
         numRows = ceil(sqrt(numPlots));
         numCols = ceil(numPlots / numRows);
 
-        figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Source'],'NumberTitle','off');
-        for j = 1:numPlots
-            numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
-            subplot(numRows, numCols, j);
-            display_shape(shapeSource, fctSource(:,j));
-            title(['Descriptor ' num2str(numberOfDescriptor)]);
-        end
+        if(displayDescriptorsGlobal)
+            figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Source'],'NumberTitle','off');
+            for j = 1:numPlots
+                numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
+                subplot(numRows, numCols, j);
+                display_shape(shapeSource, fctSource(:,j));
+                title(['Descriptor ' num2str(numberOfDescriptor)]);
+            end
 
-        figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Target'],'NumberTitle','off');
-        for j = 1:numPlots
-            numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
-            subplot(numRows, numCols, j);
-            display_shape(shapeTarget, fctTarget(:,j));
-            title(['Descriptor ' num2str(numberOfDescriptor)]);
+            figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Target'],'NumberTitle','off');
+            for j = 1:numPlots
+                numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
+                subplot(numRows, numCols, j);
+                display_shape(shapeTarget, fctTarget(:,j));
+                title(['Descriptor ' num2str(numberOfDescriptor)]);
+            end
         end
 
         % Store the descriptors in the PairShapes object
@@ -283,20 +285,22 @@ for nbMethod = 1:length(listMethods)
         numRows = ceil(sqrt(numPlots));
         numCols = ceil(numPlots / numRows);
 
-        figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Source'],'NumberTitle','off');
-        for j = 1:numPlots
-            numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
-            subplot(numRows, numCols, j);
-            display_shape(shapeSource, lm_fct_Source(:,j));
-            title(['Descriptor ' num2str(numberOfDescriptor)]);
-        end
+        if(displayDescriptorsLocal)
+            figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Source'],'NumberTitle','off');
+            for j = 1:numPlots
+                numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
+                subplot(numRows, numCols, j);
+                display_shape(shapeSource, lm_fct_Source(:,j));
+                title(['Descriptor ' num2str(numberOfDescriptor)]);
+            end
 
-        figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Target'],'NumberTitle','off');
-        for j = 1:numPlots
-            numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
-            subplot(numRows, numCols, j);
-            display_shape(shapeTarget, lm_fct_Target(:,j));
-            title(['Descriptor ' num2str(numberOfDescriptor)]);
+            figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Target'],'NumberTitle','off');
+            for j = 1:numPlots
+                numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
+                subplot(numRows, numCols, j);
+                display_shape(shapeTarget, lm_fct_Target(:,j));
+                title(['Descriptor ' num2str(numberOfDescriptor)]);
+            end
         end
 
         % Store the descriptors in the PairShapes object
