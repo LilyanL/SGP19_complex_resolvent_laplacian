@@ -310,8 +310,9 @@ for nbMethod = 1:length(listMethods)
         % Update the pair of shapes in the array
         pairs_array{i} = curPairShapes;
     end
+end
 
-    %% Compute the functional maps using different descriptors
+%% Compute the functional maps using different descriptors
     for i = 1:length(listFolders)
         % load the pair of shapes from the array
         curPairShapes = pairs_array{i};
@@ -319,31 +320,44 @@ for nbMethod = 1:length(listMethods)
         shapeSource = curPairShapes.shape_source;
         shapeTarget = curPairShapes.shape_target;
 
-        % load the descriptors from the PairShapes object
-        fctTarget = curPairShapes.descriptors_local_target{nbMethod};
-        fctSource = curPairShapes.descriptors_local_source{nbMethod};
+        % for each descriptor combination method, compute the functional map
+        for nbMethod = 1:length(listMethodsMaps)
+            method = listMethodsMaps{nbMethod};
+
+            % load the descriptors from the PairShapes object
+            fctTarget = []; fctSource = []; methodString = [];
+            for j = 1:length(method)
+                methodString = [methodString method{j}{1} ' ' method{j}{2} ' + '];
+                if strcmp(method{j}{2}, 'global')
+                    fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
+                    fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
+                elseif strcmp(method{j}{2}, 'local')
+                    fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
+                    fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
+                end
+            end
+            methodString = methodString(1:end-3); % remove the last ' + '
+
+
+        
+        fprintf('Computing the functional map using %s descriptors...\n', methodString);
 
         % optimize the functional map using the standard or the complex resolvent Laplacian term
-
-        fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', method);
+        fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
         [C_target2source, M_old] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
-
-        fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', method);
+        
+        fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
         [C_target2source_slant, M_slant] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
-
-        fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', method);
+        
+        fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
         [C_target2source_new, M_new] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
-
+        
         T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
         T_source2target_slant = fMAP.fMap2pMap(BTarget,BSource,C_target2source_slant);
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
 
-        % Store the mappings in the PairShapes object
-        curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
-        curPairShapes.mappings_Labels{nbMethod} ={[method ' - standard'], [method ' - slant'], [method ' - complRes']};
-
         % visualize the computed maps
-        figure('Name', ['Folder ' listFolders{i} ' - FM using local descriptors ' method],'NumberTitle','off');
+        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString],'NumberTitle','off');
         subplot(1,3,1);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
         subplot(1,3,2);
