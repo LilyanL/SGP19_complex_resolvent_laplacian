@@ -351,56 +351,39 @@ for nbMethod = 1:length(listMethods)
         subplot(1,3,3);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
 
-        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-        figure('Name', ['Folder ' listFolders{i} ' - FM using local descriptors ' method ' and drilling paths'],'NumberTitle','off');
+        % Store the mappings in the PairShapes object
+        curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
+        curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
-        %Display both shapes with their landmarks
-        plotName = ['Shapes with landmarks - Folder ' listFolders{i}];
-        subplot(1,2,1);
-        display_shape(shapeSource);
-        title(['Source shape (' listFolders{i} ')']);
+        % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
+        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' + zoomOut']);
+        curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
+        curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
-        subplot(1,2,2);
-        display_shape(shapeTarget);
-        title(['Target shape (' listFolders{i} ')']);
 
-        % Get the drilling paths from the PairShapes object for the target shape
-        drillingIndex_entry_source = curPairShapes.trajectories_source(:,1);
-        drillingIndex_exit_source = curPairShapes.trajectories_source(:,2);
+        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths 
+        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
-        % Compute the entry and exit points of the drilling paths on the source shape using the mapping
-        drillingIndex_entry_target = T_source2target_new(drillingIndex_entry_source);
-        drillingIndex_exit_target = T_source2target_new(drillingIndex_exit_source);
-
+        %Display both shapes with the drilling paths
+        %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
+        sourceTitle = ['Source shape (' listFolders{i} ')'];
+        targetTitle = ['Target shape (' listFolders{i} ')'];
         
-        % Plot the drilling paths on the source shape
-        subplot(1,2,1);
-        colorMap = jet(length(drillingIndex_entry_source));
-        for j = 1:length(drillingIndex_entry_source)
-            entryPoint = shapeSource.surface.VERT(drillingIndex_entry_source(j),:);
-            endPoint = shapeSource.surface.VERT(drillingIndex_exit_source(j),:);
-            plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
-        end
+        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-        % Plot the drilling paths on the target shape
-        subplot(1,2,2);
-        colorMap = jet(length(drillingIndex_entry_target));
-        for j = 1:length(drillingIndex_entry_target)
-            entryPoint = shapeTarget.surface.VERT(drillingIndex_entry_target(j),:);
-            endPoint = shapeTarget.surface.VERT(drillingIndex_exit_target(j),:);
-            plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
-        end
+        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex');
 
         % export the maps to text files for later use
-        map_name = [maps_dir 'map_' listFolders{i} '_' method '_standard.txt'];
+        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_standard.txt'];
         dlmwrite(map_name, T_source2target, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' listFolders{i} '_' method '_slant.txt'];
+        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_slant.txt'];
         dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' listFolders{i} '_' method '_complRes.txt'];
+        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_complRes.txt'];
         dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
 
     end
-end
+    end
 
 
 %% Export all figures
