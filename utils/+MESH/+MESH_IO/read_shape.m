@@ -1,4 +1,4 @@
-function S = read_shape(filename)
+function S = read_shape(filename, normalize_)
 import MESH.MESH_IO.*
 fprintf('Reading mesh...'); tic;
 fname = strsplit(filename,'.');
@@ -17,6 +17,13 @@ else % no input file extension
         [X,T] = readOff(filename);
     else
         error('file not found: %s\n',filename)
+    end
+end
+
+
+if nargin >1
+    if normalize_
+        X = normalize(X);
     end
 end
 
