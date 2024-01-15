@@ -57,19 +57,19 @@ pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, true, true);
 
 %% Compute and display the basis functions for each shape
 if(displayBasisFunctions)
-    CollectionDisplayBasisFunctions(pairs_array,  listFolders, k1, k2);
+    CollectionDisplayBasisFunctions(pairs_array, k1, k2);
 end
 
 %% For each method, compute the global descriptors for each shape
 
 
 % Call the function
-pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listFolders, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
+pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
 
 %% For each method, compute and plot the local descriptors for each shape
 num_skip = 15;
         timesteps_lm = 100;
-pairs_array = CollectionComputeLocalDescriptors(pairs_array, listFolders, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
+pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
 
 %% Compute the functional maps using different descriptors
     for i = 1:length(listFolders)
@@ -118,7 +118,7 @@ pairs_array = CollectionComputeLocalDescriptors(pairs_array, listFolders, listMe
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
 
         % visualize the computed maps
-        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString],'NumberTitle','off');
+        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
         subplot(1,3,1);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
         subplot(1,3,2);
@@ -131,30 +131,30 @@ pairs_array = CollectionComputeLocalDescriptors(pairs_array, listFolders, listMe
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
-        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' + zoomOut']);
+        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, ['Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
         curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
 
         % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths 
-        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
-        sourceTitle = ['Source shape (' listFolders{i} ')'];
-        targetTitle = ['Target shape (' listFolders{i} ')'];
+        sourceTitle = ['Source shape (' curFolderName ')'];
+        targetTitle = ['Target shape (' curFolderName ')'];
         
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-        figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
         % export the maps to text files for later use
-        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_standard.txt'];
+        map_name = [maps_dir 'map_' curFolderName '_' methodString '_standard.txt'];
         dlmwrite(map_name, T_source2target, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_slant.txt'];
+        map_name = [maps_dir 'map_' curFolderName '_' methodString '_slant.txt'];
         dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_complRes.txt'];
+        map_name = [maps_dir 'map_' curFolderName '_' methodString '_complRes.txt'];
         dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
 
     end

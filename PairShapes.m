@@ -3,6 +3,8 @@ classdef PairShapes
         shape_source
         shape_target
 
+        pair_folder_name
+
         landmarks_source
         landmarks_target
 
