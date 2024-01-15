@@ -68,51 +68,52 @@ pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k
 
 %% For each method, compute and plot the local descriptors for each shape
 num_skip = 15;
-        timesteps_lm = 100;
+timesteps_lm = 100;
 pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
 
 %% Compute the functional maps using different descriptors
-    for i = 1:length(listFolders)
-        % load the pair of shapes from the array
-        curPairShapes = pairs_array{i};
+for i = 1:length(pairs_array)
+    % load the pair of shapes from the array
+    curPairShapes = pairs_array{i};
 
-        shapeSource = curPairShapes.shape_source;
-        shapeTarget = curPairShapes.shape_target;
+    shapeSource = curPairShapes.shape_source;
+    shapeTarget = curPairShapes.shape_target;
+    curFolderName = curPairShapes.pair_folder_name;
 
-        % for each descriptor combination method, compute the functional map
-        for nbMethod = 1:length(listMethodsMaps)
-            method = listMethodsMaps{nbMethod};
+    % for each descriptor combination method, compute the functional map
+    for nbMethod = 1:length(listMethodsMaps)
+        method = listMethodsMaps{nbMethod};
 
-            % load the descriptors from the PairShapes object
-            fctTarget = []; fctSource = []; methodString = [];
-            for j = 1:length(method)
-                methodString = [methodString method{j}{1} ' ' method{j}{2} ' + '];
-                if strcmp(method{j}{2}, 'global')
-                    fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
-                    fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
-                elseif strcmp(method{j}{2}, 'local')
-                    fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
-                    fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
-                end
+        % load the descriptors from the PairShapes object
+        fctTarget = []; fctSource = []; methodString = [];
+        for j = 1:length(method)
+            methodString = [methodString method{j}{1} ' ' method{j}{2} ' + '];
+            if strcmp(method{j}{2}, 'global')
+                fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
+                fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
+            elseif strcmp(method{j}{2}, 'local')
+                fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
+                fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
             end
-            methodString = methodString(1:end-3); % remove the last ' + '
+        end
+        methodString = methodString(1:end-3); % remove the last ' + '
 
 
         BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
         EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
-        
+
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
 
         % optimize the functional map using the standard or the complex resolvent Laplacian term
         fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
         [C_target2source, M_old] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
-        
+
         fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
         [C_target2source_slant, M_slant] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
-        
+
         fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
         [C_target2source_new, M_new] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
-        
+
         T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
         T_source2target_slant = fMAP.fMap2pMap(BTarget,BSource,C_target2source_slant);
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
@@ -136,14 +137,14 @@ pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
 
-        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths 
+        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
         figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
         sourceTitle = ['Source shape (' curFolderName ')'];
         targetTitle = ['Target shape (' curFolderName ')'];
-        
+
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
         figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
@@ -158,7 +159,7 @@ pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2
         dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
 
     end
-    end
+end
 
 
 %% Export all figures
