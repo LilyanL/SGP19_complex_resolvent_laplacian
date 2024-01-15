@@ -5,10 +5,10 @@ dbstop if error % debug mode
 
 % create folders to export results and figures
 mkdir results;
-destinationFolder = './results/';
+destinationFolder = '.\results\';
 
 % Create a subfolder to store the maps
-maps_dir = [destinationFolder 'maps/'];
+maps_dir = [destinationFolder 'maps\'];
 mkdir(maps_dir);
 
 % Initialization to store data
@@ -35,7 +35,7 @@ meshOptions = {'IfComputeGeoDist',false,'IfComputeLB',true,'IfComputeNormals',tr
 % params to visualize the maps
 plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
-% list of folders contained in ../data/ from which we load the meshes and the landmarks to compute the maps
+% list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
 listFolders = {'PAIR_001', 'PAIR_002'};% 'PAIR_003', 'PAIR_004', 'PAIR_005'};
 
 % list of methods to compute the descriptors
@@ -50,7 +50,7 @@ displayBasisFunctions = false;
 % Create cell array of absolute paths to the meshes
 foldersPaths = cell(1,length(listFolders));
 for i = 1:length(listFolders)
-    foldersPaths{i} = [pwd '/../data/' listFolders{i} '/'];
+    foldersPaths{i} = [pwd '\..\data\' listFolders{i} '\'];
 end
 
 pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, true, true);
