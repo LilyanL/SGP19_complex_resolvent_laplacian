@@ -390,7 +390,7 @@ end
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
         figure('Name', ['Folder ' listFolders{i} ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
-        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex');
+        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
         % export the maps to text files for later use
         map_name = [maps_dir 'map_' listFolders{i} '_' methodString '_standard.txt'];
