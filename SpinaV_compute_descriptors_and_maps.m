@@ -41,280 +41,35 @@ listFolders = {'PAIR_001', 'PAIR_002'};% 'PAIR_003', 'PAIR_004', 'PAIR_005'};
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
 
-%% Display all the pairs of meshes and landmarks
+%% Display options
+displayDescriptorsLocal = false;
+displayDescriptorsGlobal = false;
+displayBasisFunctions = false;
+
+%% Display all the pairs of meshes and landmarks and pre-process the meshes
+% Create cell array of absolute paths to the meshes
+foldersPaths = cell(1,length(listFolders));
 for i = 1:length(listFolders)
-
-    curPairShapes = PairShapes;
-
-    %% Load the meshes
-    mesh_dir = ['../data/' listFolders{i} '/'];
-    shapeTarget_name = 'target.off';
-    shapeSource_name = 'source.off';
-    shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
-    shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-
-    %% center data
-    shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
-    shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
-
-    % preprocess the meshes
-    shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
-    shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
-
-    landmarks_file = ['../data/' listFolders{i} '/landmarks.txt'];
-    lm_idx = load(landmarks_file)+1; % +1 because matlab starts indexing at 1
-
-    % Column 1 corresponds to the landmarks indices for the target shape and column 2 for the source shape
-    lm_idx_Target = lm_idx(:,1);
-    lm_idx_Source = lm_idx(:,2);
-
-    % Assign a color to each landmark using the colormap 'jet'
-    colorMap = jet(length(lm_idx_Target));
-
-    %Display both shapes with their landmarks
-    plotName = ['Shapes with landmarks - Folder ' listFolders{i}];
-    figure('Name', plotName,'NumberTitle','off');
-    subplot(1,2,1);
-    display_shape(shapeSource);
-    scatter3(shapeSource.surface.VERT(lm_idx_Source,1), shapeSource.surface.VERT(lm_idx_Source,2), shapeSource.surface.VERT(lm_idx_Source,3), 100, colorMap, 'filled');
-    title(['Source shape (' listFolders{i} ')']);
-
-    % Add labels to the landmarks
-    for j = 1:length(lm_idx_Source)
-        text(shapeSource.surface.VERT(lm_idx_Source(j),1), shapeSource.surface.VERT(lm_idx_Source(j),2), shapeSource.surface.VERT(lm_idx_Source(j),3), num2str(j), 'FontSize', 14);
-    end
-
-    % Add a text box under the plot with the number of landmarks
-    dim = [.2 .05 .3 .3];
-    str = ['Number of landmarks: ' num2str(length(lm_idx_Target))];
-    annotation('textbox',dim,'String',str,'FitBoxToText','on');
-
-    subplot(1,2,2);
-    display_shape(shapeTarget);
-    scatter3(shapeTarget.surface.VERT(lm_idx_Target,1), shapeTarget.surface.VERT(lm_idx_Target,2), shapeTarget.surface.VERT(lm_idx_Target,3), 100, colorMap, 'filled');
-    title(['Target shape (' listFolders{i} ')']);
-
-    % Add labels to the landmarks
-    for j = 1:length(lm_idx_Target)
-        text(shapeTarget.surface.VERT(lm_idx_Target(j),1), shapeTarget.surface.VERT(lm_idx_Target(j),2), shapeTarget.surface.VERT(lm_idx_Target(j),3), num2str(j), 'FontSize', 14);
-    end
-
-    % If '/drilling_paths.txt' exists, load the drilling paths
-    readPaths = [];
-    drillingIndex_entry = [];
-    drillingIndex_exit = [];
-    drilling_paths_file = [mesh_dir 'drilling_paths_source.txt'];
-    if exist(drilling_paths_file, 'file') == 2
-        readPaths = readmatrix([mesh_dir 'drilling_paths_source.txt']);
-        drillingIndex_entry = readPaths(:,1);
-        drillingIndex_exit = readPaths(:,2);
-    end
-
-    % Plot the drilling paths if they exist
-    subplot(1,2,2);
-    colorMap = jet(length(drillingIndex_entry));
-    for j = 1:length(drillingIndex_entry)
-        entryPoint = shapeTarget.surface.VERT(drillingIndex_entry(j),:);
-        endPoint = shapeTarget.surface.VERT(drillingIndex_exit(j),:);
-        plotTrajectory(entryPoint,endPoint, colorMap(j,:), 3, 0.5);
-    end
-
-    % Store all useful data in the PairShapes object
-    curPairShapes.shape_source = shapeSource;
-    curPairShapes.shape_target = shapeTarget;
-
-    curPairShapes.landmarks_source = lm_idx_Source;
-    curPairShapes.landmarks_target = lm_idx_Target;
-
-    curPairShapes.trajectories_source = readPaths;
-
-    % Store the PairShapes object in the array
-    pairs_array{i} = curPairShapes;
-
+    foldersPaths{i} = [pwd '/../data/' listFolders{i} '/'];
 end
+
+pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, true, true);
 
 %% Compute and display the basis functions for each shape
-% for i = 1:length(listFolders)
-%     mesh_dir = ['../data/' listFolders{i} '/'];
-%     shapeTarget_name = 'target.off';
-%     shapeSource_name = 'source.off';
-%     shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
-%     shapeSource = MESH.MESH_IO.read_shape([mesh_dir, shapeSource_name]);
-%
-%     % center data
-%     shapeTarget.surface.VERT = shapeTarget.surface.VERT - mean(shapeTarget.surface.VERT);
-%     shapeSource.surface.VERT = shapeSource.surface.VERT - mean(shapeSource.surface.VERT);
-%
-%     % preprocess the meshes
-%     shapeTarget = MESH.preprocess(shapeTarget,meshOptions{:});
-%     shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
-%
-%     % compute descriptors
-%     BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-%     EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
-%
-%     % plot the descriptors
-%     numPlots = k1;
-%     numRows = ceil(sqrt(numPlots));
-%     numCols = ceil(numPlots / numRows);
-%
-%     figure('Name', ['Folder ' listFolders{i}  '- Basis functions '  ' - Source'],'NumberTitle','off');
-%     for j = 1:numPlots
-%         subplot(numRows, numCols, j);
-%         h = trisurf(shapeSource.surface.TRIV, shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), BSource(:,j), 'FaceColor', 'interp');
-%         set(h, 'edgecolor', 'none');
-%         axis equal; axis off; hold on;
-%         title(['Basis function ' num2str(j)]);
-%     end
-%
-%     figure('Name', ['Folder ' listFolders{i}  '- Basis functions ' ' - Target'],'NumberTitle','off');
-%     for j = 1:numPlots
-%         subplot(numRows, numCols, j);
-%         h = trisurf(shapeTarget.surface.TRIV, shapeTarget.surface.VERT(:,1), shapeTarget.surface.VERT(:,2), shapeTarget.surface.VERT(:,3), BTarget(:,j), 'FaceColor', 'interp');
-%         set(h, 'edgecolor', 'none');
-%         axis equal; axis off; hold on;
-%         title(['Basis function ' num2str(j)]);
-%     end
-%
-% end
+if(displayBasisFunctions)
+    CollectionDisplayBasisFunctions(pairs_array,  listFolders, k1, k2);
+end
 
 %% For each method, compute the global descriptors for each shape
-for nbMethod = 1:length(listMethods)
-    method = listMethods{nbMethod};
-    fprintf('Computing global %s descriptors for each shape...\n', method);
 
-    for i = 1:length(listFolders)
-        % load the pair of shapes from the array
-        curPairShapes = pairs_array{i};
-        shapeSource = curPairShapes.shape_source;
-        shapeTarget = curPairShapes.shape_target;
 
-        % compute descriptors
-        BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
-
-        if strcmp(method, 'WKS')
-            fctTarget_all = fMAP.waveKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimesGlobalDescriptors);
-            fctSource_all = fMAP.waveKernelSignature(BSource, EvSource, shapeSource.A, numTimesGlobalDescriptors);
-        elseif strcmp(method, 'HKS')
-            fctTarget_all = heatKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimesGlobalDescriptors);
-            fctSource_all = heatKernelSignature(BSource, EvSource, shapeSource.A, numTimesGlobalDescriptors);
-        end
-
-        % ignore some descriptors
-        fctTarget = fctTarget_all(:,1:numSkipGlobalDescriptors:end);
-        fctSource = fctSource_all(:,1:numSkipGlobalDescriptors:end);
-
-        % plot the descriptors
-        numPlots = size(fctTarget,2);
-        numRows = ceil(sqrt(numPlots));
-        numCols = ceil(numPlots / numRows);
-
-        if(displayDescriptorsGlobal)
-            figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Source'],'NumberTitle','off');
-            for j = 1:numPlots
-                numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
-                subplot(numRows, numCols, j);
-                display_shape(shapeSource, fctSource(:,j));
-                title(['Descriptor ' num2str(numberOfDescriptor)]);
-            end
-
-            figure('Name', ['Folder ' listFolders{i} ' - Global descriptors ' method  ' - Target'],'NumberTitle','off');
-            for j = 1:numPlots
-                numberOfDescriptor = (j-1)*numSkipGlobalDescriptors+1; % number of descriptor, taking into account the ignored ones
-                subplot(numRows, numCols, j);
-                display_shape(shapeTarget, fctTarget(:,j));
-                title(['Descriptor ' num2str(numberOfDescriptor)]);
-            end
-        end
-
-        % Store the descriptors in the PairShapes object
-        curPairShapes.descriptors_global_source{nbMethod} = fctSource;
-        curPairShapes.descriptors_global_target{nbMethod} = fctTarget;
-
-        % Store the descriptors labels in the PairShapes object (WKS or HKS)
-        curPairShapes.descriptors_global_source_labels{nbMethod} = method;
-        curPairShapes.descriptors_global_target_labels{nbMethod} = method;
-
-        % Update the pair of shapes in the array
-        pairs_array{i} = curPairShapes;
-
-    end
-end
+% Call the function
+pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listFolders, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
 
 %% For each method, compute and plot the local descriptors for each shape
-for nbMethod = 1:length(listMethods)
-    method = listMethods{nbMethod};
-    fprintf('Computing local %s descriptors for each shape...\n', method);
-    for i = 1:length(listFolders)
-        % load the pair of shapes from the array
-        curPairShapes = pairs_array{i};
-        shapeSource = curPairShapes.shape_source;
-        shapeTarget = curPairShapes.shape_target;
-
-        % compute descriptors
-        BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
-
-        % Column 1 corresponds to the landmarks indices for the target shape and column 2 for the source shape
-        lm_idx_Target = curPairShapes.landmarks_target;
-        lm_idx_Source = curPairShapes.landmarks_source;
-
-        % Compute the landmarks based descriptors using compute_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip)
+num_skip = 15;
         timesteps_lm = 100;
-
-        %compute_chosen_local_descriptors_with_landmarks(S,numEigs,landmarks,t,num_skip, method)
-        numEigs = 100;
-        lm_fct_Target = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeTarget,numEigs,lm_idx_Target,timesteps_lm,1, method);
-        lm_fct_Source = fMAP.compute_chosen_local_descriptors_with_landmarks(shapeSource,numEigs,lm_idx_Source,timesteps_lm,1, method);
-
-        num_skip = 15;
-        firstTimeSteps = 1+(1- 1:(size(lm_idx,1)))*timesteps_lm;
-        idx=[];
-        for lm_nb = 1:size(lm_idx,1)
-            added_idx = firstTimeSteps(lm_nb):num_skip:(firstTimeSteps(lm_nb+1)-1);
-            idx = [idx added_idx];
-        end
-
-        lm_fct_Target = lm_fct_Target(:,idx);
-        lm_fct_Source = lm_fct_Source(:,idx);
-        normc(lm_fct_Target); normc(lm_fct_Source);
-
-        % plot the descriptors
-        numPlots = size(lm_fct_Target,2);
-        numRows = ceil(sqrt(numPlots));
-        numCols = ceil(numPlots / numRows);
-
-        if(displayDescriptorsLocal)
-            figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Source'],'NumberTitle','off');
-            for j = 1:numPlots
-                numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
-                subplot(numRows, numCols, j);
-                display_shape(shapeSource, lm_fct_Source(:,j));
-                title(['Descriptor ' num2str(numberOfDescriptor)]);
-            end
-
-            figure('Name', ['Folder ' listFolders{i} ' - Local descriptors ' method  ' - Target'],'NumberTitle','off');
-            for j = 1:numPlots
-                numberOfDescriptor = idx(j); % number of descriptor, taking into account the ignored ones
-                subplot(numRows, numCols, j);
-                display_shape(shapeTarget, lm_fct_Target(:,j));
-                title(['Descriptor ' num2str(numberOfDescriptor)]);
-            end
-        end
-
-        % Store the descriptors in the PairShapes object
-        curPairShapes.descriptors_local_source{nbMethod} = lm_fct_Source;
-        curPairShapes.descriptors_local_target{nbMethod} = lm_fct_Target;
-
-        % Store the descriptors labels in the PairShapes object (WKS or HKS)
-        curPairShapes.descriptors_local_source_labels{nbMethod} = method;
-        curPairShapes.descriptors_local_target_labels{nbMethod} = method;
-
-        % Update the pair of shapes in the array
-        pairs_array{i} = curPairShapes;
-    end
-end
+pairs_array = CollectionComputeLocalDescriptors(pairs_array, listFolders, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
 
 %% Compute the functional maps using different descriptors
     for i = 1:length(listFolders)
@@ -343,6 +98,8 @@ end
             methodString = methodString(1:end-3); % remove the last ' + '
 
 
+        BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
+        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
         
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
 
