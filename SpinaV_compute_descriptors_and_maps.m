@@ -33,15 +33,33 @@ meshOptions = {'IfComputeGeoDist',false,'IfComputeLB',true,'IfComputeNormals',tr
 plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
-listFolders = {'PAIR_001', 'PAIR_002'};% 'PAIR_003', 'PAIR_004', 'PAIR_005'};
+%listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
+listFolders = {'PAIR_007'};
 
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
 
+% list of methods to compute the maps stored as cell arrays of strings, each cell array indicating the method and the locality of the descriptors
+listMethodsMaps = {
+    %{{'WKS', 'global'}};
+    %{{'WKS', 'local'}};
+    %{{'WKS', 'global'}, {'WKS', 'local'}};
+    %
+    %{{'HKS', 'global'}};
+    %{{'HKS', 'local'}};
+    %{{'HKS', 'global'}, {'HKS', 'local'}};
+%
+    %{{'WKS', 'local'}, {'HKS', 'local'}};
+    %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
+    {{'WKS', 'global'}, {'HKS', 'local'}};
+};
+
 %% Display options
-displayDescriptorsLocal = false;
-displayDescriptorsGlobal = false;
-displayBasisFunctions = false;
+displayShapePairs = true;
+displayShapePairsWithPaths = true;
+displayBasisFunctions = true;
+displayDescriptorsGlobal = true;
+displayDescriptorsLocal = true;
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
 % Create cell array of absolute paths to the meshes
