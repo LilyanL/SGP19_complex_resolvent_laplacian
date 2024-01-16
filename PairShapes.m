@@ -8,6 +8,11 @@ classdef PairShapes
         landmarks_source
         landmarks_target
 
+        noise_vector_source %if non was applied, should be 0
+        noise_vector_target %if non was applied, should be 0
+        transform_source %if non was applied, should be identity
+        transform_target %if non was applied, should be identity
+
         mappings
         mappings_Labels
 
@@ -23,6 +28,8 @@ classdef PairShapes
 
         trajectories_source %mapping can directly be applied
         trajectories_target %mapping is trickier to apply (reverse search)
+
+        
 
     end
     methods

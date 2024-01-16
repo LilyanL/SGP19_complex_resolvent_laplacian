@@ -11,9 +11,6 @@ destinationFolder = '.\results\';
 maps_dir = [destinationFolder 'maps\'];
 mkdir(maps_dir);
 
-% Initialization to store data
-pairs_array = {};
-
 %% some parameters
 % fmap size: k2-by-k1
 k1 = 100;
@@ -53,7 +50,52 @@ for i = 1:length(listFolders)
     foldersPaths{i} = [pwd '\..\data\' listFolders{i} '\'];
 end
 
-pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, true, true);
+loadOption = 'default'; % 'default' or 'source_only' or 'target_only
+pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
+
+%% Duplicate the pairs of shapes to apply random noise and transforms to the copies and store them in a temporary cell array
+% For each pair of shapes, create nbCopies copies with random noise and transforms using function transformShape (limits are provided as parameters)
+% transformShape(mesh, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax)
+nbCopies = 2;
+pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
+noiseMagnitude = 0; % 0.5;
+rotationMin = -pi/4; %-pi/4;
+rotationMax = pi/4; %pi/4;
+translationMin = -300; %-300;
+translationMax = 300; %300;
+
+for i = 1:length(pairs_array)
+    display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
+    curPairShapes = pairs_array{i};
+    for j = 1:nbCopies
+        curPairShapesCopy = curPairShapes;
+
+        % if it is the first copy, no noise or transform is applied to have a clean copy for comparison
+        if(j==1)
+            pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
+            continue;
+        end
+
+        % add noise and transform the source shape
+        curPairShapesCopy.shape_source = transformShape(curPairShapesCopy.shape_source, noiseMagnitude, translationMin, translationMax, rotationMin, rotationMax);
+        [curPairShapesCopy.shape_source, noiseVectorSource, transformSource] = transformShape(curPairShapesCopy.shape_source, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax);
+
+        % add noise and transform the target shape
+        curPairShapesCopy.shape_target = transformShape(curPairShapesCopy.shape_target, noiseMagnitude, translationMin, translationMax, rotationMin, rotationMax);
+        [curPairShapesCopy.shape_target, noiseVectorTarget, transformTarget] = transformShape(curPairShapesCopy.shape_target, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax);
+
+        % store the noise vectors and the transforms in the PairShapes object
+        curPairShapesCopy.noise_vector_source = noiseVectorSource;
+        curPairShapesCopy.noise_vector_target = noiseVectorTarget;
+        curPairShapesCopy.transform_source = transformSource;
+        curPairShapesCopy.transform_target = transformTarget;
+
+        pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
+    end
+end
+
+pairs_array = pairs_array_tmp;
+clear pairs_array_tmp;
 
 %% Compute and display the basis functions for each shape
 if(displayBasisFunctions)
