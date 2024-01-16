@@ -179,7 +179,7 @@ for i = 1:length(pairs_array)
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
 
         % visualize the computed maps
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
         subplot(1,3,1);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
         subplot(1,3,2);
@@ -192,13 +192,13 @@ for i = 1:length(pairs_array)
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
-        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, ['Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
         curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
 
         % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
@@ -207,7 +207,7 @@ for i = 1:length(pairs_array)
 
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
         % export the maps to text files for later use
