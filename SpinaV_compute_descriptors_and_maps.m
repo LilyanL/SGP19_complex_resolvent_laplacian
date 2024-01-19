@@ -211,11 +211,11 @@ for i = 1:length(pairs_array)
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
         % export the maps to text files for later use
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_standard.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_standard.txt'];
         dlmwrite(map_name, T_source2target, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_slant.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_slant.txt'];
         dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_complRes.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_complRes.txt'];
         dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
 
     end
@@ -225,5 +225,7 @@ end
 %% Export all figures
 saveAllFigures(destinationFolder, 'png');
 
+%% Save all data
+save("results\all_data.mat");
 %% Check memory
 memory
