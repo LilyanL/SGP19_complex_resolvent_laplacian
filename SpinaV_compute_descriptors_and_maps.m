@@ -34,7 +34,7 @@ plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
 %listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
-listFolders = {'PAIR_007'};
+listFolders = {'PAIR_002_lowres'};
 
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
@@ -190,6 +190,36 @@ for i = 1:length(pairs_array)
         % Store the mappings in the PairShapes object
         curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
+
+        % compute the functional and geometric map from source to target
+        fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+        [C_source2target, M_old] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+
+        fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+        [C_source2target_slant, M_slant] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+
+        fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+        [C_source2target_new, M_new] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+
+        T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
+        T_target2source_slant = fMAP.fMap2pMap(BSource,BTarget,C_source2target_slant);
+        T_target2source_new = fMAP.fMap2pMap(BSource,BTarget,C_source2target_new);
+
+        % TODO: store the maps in the PairShapes object
+
+        % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
+        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  10);
+        [T_target2source_slant_bcicp, T_source2target_slant_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_slant, T_source2target_slant, 10);
+        [T_target2source_new_bcicp, T_source2target_new_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_new, T_source2target_new, 10);
+
+        % visualize the computed maps with BCICP
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
+        subplot(1,3,1);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
+        subplot(1,3,2);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant_bcicp,plotOptions{:}); title('slanted Mask');
+        subplot(1,3,3);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new_bcicp,plotOptions{:}); title('complex resolvent Mask');
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
         T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
