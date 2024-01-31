@@ -33,15 +33,33 @@ meshOptions = {'IfComputeGeoDist',false,'IfComputeLB',true,'IfComputeNormals',tr
 plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
-listFolders = {'PAIR_001', 'PAIR_002'};% 'PAIR_003', 'PAIR_004', 'PAIR_005'};
+%listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
+listFolders = {'PAIR_002_lowres'};
 
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
 
+% list of methods to compute the maps stored as cell arrays of strings, each cell array indicating the method and the locality of the descriptors
+listMethodsMaps = {
+    %{{'WKS', 'global'}};
+    %{{'WKS', 'local'}};
+    %{{'WKS', 'global'}, {'WKS', 'local'}};
+    %
+    %{{'HKS', 'global'}};
+    %{{'HKS', 'local'}};
+    %{{'HKS', 'global'}, {'HKS', 'local'}};
+%
+    %{{'WKS', 'local'}, {'HKS', 'local'}};
+    %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
+    {{'WKS', 'global'}, {'HKS', 'local'}};
+};
+
 %% Display options
-displayDescriptorsLocal = false;
-displayDescriptorsGlobal = false;
-displayBasisFunctions = false;
+displayShapePairs = true;
+displayShapePairsWithPaths = true;
+displayBasisFunctions = true;
+displayDescriptorsGlobal = true;
+displayDescriptorsLocal = true;
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
 % Create cell array of absolute paths to the meshes
@@ -161,7 +179,7 @@ for i = 1:length(pairs_array)
         T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
 
         % visualize the computed maps
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
         subplot(1,3,1);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
         subplot(1,3,2);
@@ -173,14 +191,44 @@ for i = 1:length(pairs_array)
         curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
+        % compute the functional and geometric map from source to target
+        fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+        [C_source2target, M_old] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+
+        fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+        [C_source2target_slant, M_slant] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+
+        fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+        [C_source2target_new, M_new] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+
+        T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
+        T_target2source_slant = fMAP.fMap2pMap(BSource,BTarget,C_source2target_slant);
+        T_target2source_new = fMAP.fMap2pMap(BSource,BTarget,C_source2target_new);
+
+        % TODO: store the maps in the PairShapes object
+
+        % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
+        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  10);
+        [T_target2source_slant_bcicp, T_source2target_slant_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_slant, T_source2target_slant, 10);
+        [T_target2source_new_bcicp, T_source2target_new_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_new, T_source2target_new, 10);
+
+        % visualize the computed maps with BCICP
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
+        subplot(1,3,1);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
+        subplot(1,3,2);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant_bcicp,plotOptions{:}); title('slanted Mask');
+        subplot(1,3,3);
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new_bcicp,plotOptions{:}); title('complex resolvent Mask');
+
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
-        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, ['Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
         curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
 
         % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
@@ -189,15 +237,15 @@ for i = 1:length(pairs_array)
 
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-        figure('Name', ['Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
         % export the maps to text files for later use
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_standard.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_standard.txt'];
         dlmwrite(map_name, T_source2target, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_slant.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_slant.txt'];
         dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
-        map_name = [maps_dir 'map_' curFolderName '_' methodString '_complRes.txt'];
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_complRes.txt'];
         dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
 
     end
@@ -207,5 +255,7 @@ end
 %% Export all figures
 saveAllFigures(destinationFolder, 'png');
 
+%% Save all data
+save("results\all_data.mat");
 %% Check memory
 memory
