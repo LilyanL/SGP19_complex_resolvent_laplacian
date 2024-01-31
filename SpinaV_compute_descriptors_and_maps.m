@@ -63,6 +63,10 @@ displayDescriptorsLocal = true;
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
 % Create cell array of absolute paths to the meshes
+fprintf(' ------------------------------ \n');
+fprintf('Loading and displaying the shapes and landmarks...');
+fprintf(' ------------------------------ \n\n');
+
 foldersPaths = cell(1,length(listFolders));
 for i = 1:length(listFolders)
     foldersPaths{i} = [pwd '\..\data\' listFolders{i} '\'];
@@ -71,10 +75,14 @@ end
 loadOption = 'default'; % 'default' or 'source_only' or 'target_only
 pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
 
+drawnow;
 %% Duplicate the pairs of shapes to apply random noise and transforms to the copies and store them in a temporary cell array
 % For each pair of shapes, create nbCopies copies with random noise and transforms using function transformShape (limits are provided as parameters)
 % transformShape(mesh, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax)
 nbCopies = 2;
+fprintf('Copying the shapes and applying random noise and transforms...');
+fprintf(' \n------------------------------ \n\n');
+
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
 noiseMagnitude = 0; % 0.5;
 rotationMin = -pi/4; %-pi/4;
@@ -114,24 +122,36 @@ end
 
 pairs_array = pairs_array_tmp;
 clear pairs_array_tmp;
-
+drawnow;
 %% Compute and display the basis functions for each shape
 if(displayBasisFunctions)
+    fprintf('\n===============================')
+    fprintf('Computing and displaying the basis functions...');
+    fprintf('=============================== \n\n');
+
     CollectionDisplayBasisFunctions(pairs_array, k1, k2);
 end
-
+drawnow;
 %% For each method, compute the global descriptors for each shape
-
-
-% Call the function
+fprintf(' \n=============================== ');
+fprintf('Computing the global descriptors for each shape...');
+fprintf(' =============================== \n\n');
 pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
-
+drawnow;
 %% For each method, compute and plot the local descriptors for each shape
+fprintf(' \n=============================== ');
+fprintf('Computing the local descriptors for each shape...');
+fprintf(' =============================== \n\n');
+
 num_skip = 15;
 timesteps_lm = 100;
 pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
-
+drawnow;
 %% Compute the functional maps using different descriptors
+fprintf(' \n=============================== ');
+fprintf('Computing the functional maps...');
+fprintf(' =============================== \n\n');
+
 for i = 1:length(pairs_array)
     % load the pair of shapes from the array
     curPairShapes = pairs_array{i};
@@ -162,6 +182,10 @@ for i = 1:length(pairs_array)
         BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
         EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
+        fprintf(' ------------------------------ ');
+        fprintf(['Computing the functional map for vertebra number ' num2str(i) ' out of ' num2str(length(pairs_array))]);
+        fprintf(' ------------------------------ \n');  
+
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
 
         % optimize the functional map using the standard or the complex resolvent Laplacian term
@@ -191,6 +215,11 @@ for i = 1:length(pairs_array)
         curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
+        fprintf(' ------------------------------ ');
+        fprintf('Computing the reverse maps for BCICP...');
+        fprintf(' ------------------------------\n');  
+        drawnow;
+
         % compute the functional and geometric map from source to target
         fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
         [C_source2target, M_old] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
@@ -208,9 +237,23 @@ for i = 1:length(pairs_array)
         % TODO: store the maps in the PairShapes object
 
         % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
-        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  10);
-        [T_target2source_slant_bcicp, T_source2target_slant_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_slant, T_source2target_slant, 10);
-        [T_target2source_new_bcicp, T_source2target_new_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_new, T_source2target_new, 10);
+
+        fprintf(' ------------------------------ ');
+        fprintf('Refining the maps with BCICP...');
+        fprintf(' ------------------------------');  
+        drawnow;
+
+        tic;
+        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  3);
+        fprintf('Time needed to compute the BCICP maps on the standard Laplacian term method: %f seconds\n', toc);
+
+        tic;
+        [T_target2source_slant_bcicp, T_source2target_slant_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_slant, T_source2target_slant, 3);
+        fprintf('Time needed to compute the BCICP maps on the slanted Laplacian term method: %f seconds\n', toc);
+
+        tic;
+        [T_target2source_new_bcicp, T_source2target_new_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_new, T_source2target_new, 3);
+        fprintf('Time needed to compute the BCICP maps on the complex resolvent Laplacian term method: %f seconds\n', toc);
 
         % visualize the computed maps with BCICP
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
@@ -220,9 +263,17 @@ for i = 1:length(pairs_array)
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant_bcicp,plotOptions{:}); title('slanted Mask');
         subplot(1,3,3);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new_bcicp,plotOptions{:}); title('complex resolvent Mask');
+        drawnow;
+
+        fprintf(' ------------------------------ ');
+        fprintf('Refining the maps with ZoomOut...');
+        fprintf(' ------------------------------'); 
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
+        tic;
         T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+        fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method: %f seconds\n', toc);
+
         curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
