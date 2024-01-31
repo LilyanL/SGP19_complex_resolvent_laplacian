@@ -79,10 +79,11 @@ drawnow;
 %% Duplicate the pairs of shapes to apply random noise and transforms to the copies and store them in a temporary cell array
 % For each pair of shapes, create nbCopies copies with random noise and transforms using function transformShape (limits are provided as parameters)
 % transformShape(mesh, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax)
-nbCopies = 2;
+fprintf(' \n------------------------------ \n');
 fprintf('Copying the shapes and applying random noise and transforms...');
 fprintf(' \n------------------------------ \n\n');
 
+nbCopies = 1;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
 noiseMagnitude = 0; % 0.5;
 rotationMin = -pi/4; %-pi/4;
