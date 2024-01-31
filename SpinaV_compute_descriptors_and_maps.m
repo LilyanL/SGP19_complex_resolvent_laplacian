@@ -278,6 +278,12 @@ for i = 1:length(pairs_array)
         curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
+        % refine the BCICP mapping with zoomOut
+        tic;
+        T_source2target_new_bcicp = refineZoomOut(T_source2target_new_bcicp, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
+        fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
+        
+        % TBD: store the maps in the PairShapes object
 
         % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
@@ -291,6 +297,13 @@ for i = 1:length(pairs_array)
 
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
+
+        % on a new figure, visualize the mapping with complex resolvent Laplacian term refined with BCICP and the drilling paths
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString '+ BCICP and drilling paths (direct)'],'NumberTitle','off');
+        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new_bcicp, 'direct');
+
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString '+ BCICP and drilling paths (connex)'],'NumberTitle','off');
+        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new_bcicp, 'connex', [7 7]);
 
         % export the maps to text files for later use
         map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_standard.txt'];
