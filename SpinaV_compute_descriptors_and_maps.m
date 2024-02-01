@@ -34,7 +34,7 @@ plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
 %listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
-listFolders = {'PAIR_002_lowres'};
+listFolders = {'PAIR_008'};
 
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
@@ -90,6 +90,31 @@ rotationMin = -pi/4; %-pi/4;
 rotationMax = pi/4; %pi/4;
 translationMin = -300; %-300;
 translationMax = 300; %300;
+% If a file containing transforms to apply to the shapes is provided, load it. Else, create the transforms and store them in a file.
+% Transform file format: each line contains the 6 parameters of a transform (3 for translation, 3 for rotation)
+
+transformsParameters = zeros(nbCopies*length(pairs_array), 6);
+transformParametersFilePath = [pwd '\..\data\TRANSFORMS_001\'];
+
+if exist(transformParametersFilePath, 'dir')
+    transformParametersFilePath = [transformParametersFilePath 'transformsParameters.txt'];
+    if exist(transformParametersFilePath, 'file')
+        transformsParameters = dlmread(transformParametersFilePath);
+        if(size(transformsParameters,1) < nbCopies*length(pairs_array))
+            error(['The number of transforms in the file is stricly inferior to the number of copies and pairs of shapes (' num2str(nbCopies*length(pairs_array)) '). Change folder or randomly generate transforms in the code.']);
+        end
+    else
+        transformsParameters = zeros(length(pairs_array), 6);
+        for i = 1:(nbCopies*length(pairs_array))
+            if i ==1 || mod(i, nbCopies) == 1
+                transformsParameters(i,:) = [0, 0, 0, 0, 0, 0]; % no noise or transform is applied to have a clean copy for comparison
+                continue;
+            end
+            transformsParameters(i,:) = [randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax])];
+        end
+        dlmwrite([pwd '\transforms.txt'], transformsParameters, 'delimiter', ' ');
+    end
+end
 
 for i = 1:length(pairs_array)
     display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
@@ -97,24 +122,18 @@ for i = 1:length(pairs_array)
     for j = 1:nbCopies
         curPairShapesCopy = curPairShapes;
 
-        % if it is the first copy, no noise or transform is applied to have a clean copy for comparison
-        if(j==1)
-            pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
-            continue;
-        end
-
-        % add noise and transform the source shape
-        curPairShapesCopy.shape_source = transformShape(curPairShapesCopy.shape_source, noiseMagnitude, translationMin, translationMax, rotationMin, rotationMax);
-        [curPairShapesCopy.shape_source, noiseVectorSource, transformSource] = transformShape(curPairShapesCopy.shape_source, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax);
+        % add noise and transform the source shape %mesh, noise, translation, rotation
+        %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
+        %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
         % add noise and transform the target shape
-        curPairShapesCopy.shape_target = transformShape(curPairShapesCopy.shape_target, noiseMagnitude, translationMin, translationMax, rotationMin, rotationMax);
-        [curPairShapesCopy.shape_target, noiseVectorTarget, transformTarget] = transformShape(curPairShapesCopy.shape_target, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax);
+        noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
+        [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
         % store the noise vectors and the transforms in the PairShapes object
-        curPairShapesCopy.noise_vector_source = noiseVectorSource;
-        curPairShapesCopy.noise_vector_target = noiseVectorTarget;
-        curPairShapesCopy.transform_source = transformSource;
+        curPairShapesCopy.noise_vector_source = [];
+        curPairShapesCopy.noise_vector_target = noise;
+        curPairShapesCopy.transform_source = rigidtform3d;
         curPairShapesCopy.transform_target = transformTarget;
 
         pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
