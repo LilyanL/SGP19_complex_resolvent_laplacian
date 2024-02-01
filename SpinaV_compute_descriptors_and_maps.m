@@ -202,7 +202,7 @@ for i = 1:length(pairs_array)
         BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
         EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
-        fprintf(' ------------------------------ ');
+        fprintf(' \n------------------------------ ');
         fprintf(['Computing the functional map for vertebra number ' num2str(i) ' out of ' num2str(length(pairs_array))]);
         fprintf(' ------------------------------ \n');  
 
@@ -232,10 +232,10 @@ for i = 1:length(pairs_array)
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
 
         % Store the mappings in the PairShapes object
-        curPairShapes.mappings{nbMethod} = [T_source2target; T_source2target_slant; T_source2target_new];
+        curPairShapes.mappings{nbMethod} = [T_source2target, T_source2target_slant, T_source2target_new];
         curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
 
-        fprintf(' ------------------------------ ');
+        fprintf(' \n------------------------------ ');
         fprintf('Computing the reverse maps for BCICP...');
         fprintf(' ------------------------------\n');  
         drawnow;
@@ -258,9 +258,9 @@ for i = 1:length(pairs_array)
 
         % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
 
-        fprintf(' ------------------------------ ');
+        fprintf(' \n------------------------------ ');
         fprintf('Refining the maps with BCICP...');
-        fprintf(' ------------------------------');  
+        fprintf(' ------------------------------\n');  
         drawnow;
 
         tic;
@@ -287,7 +287,7 @@ for i = 1:length(pairs_array)
 
         fprintf(' ------------------------------ ');
         fprintf('Refining the maps with ZoomOut...');
-        fprintf(' ------------------------------'); 
+        fprintf(' ------------------------------\n'); 
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
         tic;
@@ -303,6 +303,10 @@ for i = 1:length(pairs_array)
         fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
         
         % TBD: store the maps in the PairShapes object
+
+        fprintf(' \n------------------------------ ');
+        fprintf('Visualizing the maps...');
+        fprintf(' ------------------------------\n'); 
 
         % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
