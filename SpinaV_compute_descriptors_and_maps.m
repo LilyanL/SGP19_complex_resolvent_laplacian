@@ -63,7 +63,7 @@ displayDescriptorsLocal = true;
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
 % Create cell array of absolute paths to the meshes
-fprintf(' ------------------------------ \n');
+fprintf(' \n------------------------------ ');
 fprintf('Loading and displaying the shapes and landmarks...');
 fprintf(' ------------------------------ \n\n');
 
@@ -79,9 +79,10 @@ drawnow;
 %% Duplicate the pairs of shapes to apply random noise and transforms to the copies and store them in a temporary cell array
 % For each pair of shapes, create nbCopies copies with random noise and transforms using function transformShape (limits are provided as parameters)
 % transformShape(mesh, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax)
-fprintf(' \n------------------------------ \n');
+
+fprintf(' \n------------------------------ ');
 fprintf('Copying the shapes and applying random noise and transforms...');
-fprintf(' \n------------------------------ \n\n');
+fprintf(' ------------------------------ \n\n');
 
 nbCopies = 1;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
@@ -126,10 +127,15 @@ for i = 1:length(pairs_array)
         %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
         %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
+        if j ==1 || mod(j, nbCopies) == 1
+            noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
+            transformTarget = rigidtform3d;
+        else
         % add noise and transform the target shape
         noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
         [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
+        end
         % store the noise vectors and the transforms in the PairShapes object
         curPairShapesCopy.noise_vector_source = [];
         curPairShapesCopy.noise_vector_target = noise;
