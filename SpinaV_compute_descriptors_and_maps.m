@@ -13,12 +13,12 @@ mkdir(maps_dir);
 
 %% some parameters
 % fmap size: k2-by-k1
-k1 = 100;
-k2 = 100;
+k1 = 50;
+k2 = 50;
 
 % params to compute WKS or descriptors
-numTimesGlobalDescriptors = 200;
-numSkipGlobalDescriptors = 20;
+numTimesGlobalDescriptors = 100;
+numSkipGlobalDescriptors = 1;
 
 % relative weights of different terms to optimize a functional map
 para.a = 2e-1;
@@ -35,6 +35,7 @@ plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
 %listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
 listFolders = {'PAIR_008'};
+%listFolders = {'PAIR_001','PAIR_002'};
 
 % list of methods to compute the descriptors
 listMethods = {'WKS', 'HKS'}; %, 'SIHKS', 'EKS', 'WKS+SIHKS', 'WKS+EKS', 'SIHKS+EKS', 'WKS+SIHKS+EKS'};
@@ -51,15 +52,17 @@ listMethodsMaps = {
 %
     %{{'WKS', 'local'}, {'HKS', 'local'}};
     %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
-    {{'WKS', 'global'}, {'HKS', 'local'}};
+    {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'BCICP'}, {'zoomOut'}};
+    {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'zoomOut'}};
 };
 
 %% Display options
 displayShapePairs = true;
 displayShapePairsWithPaths = true;
-displayBasisFunctions = true;
-displayDescriptorsGlobal = true;
-displayDescriptorsLocal = true;
+displayBasisFunctions = false;
+displayDescriptorsGlobal = false;
+displayDescriptorsLocal = false;
+
 %% Figures used to display the final results
 figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
 mean_errors_array = {};
@@ -87,13 +90,14 @@ fprintf(' \n------------------------------ ');
 fprintf('Copying the shapes and applying random noise and transforms...');
 fprintf(' ------------------------------ \n\n');
 
-nbCopies = 1;
+nbCopies = 5;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
-noiseMagnitude = 0; % 0.5;
-rotationMin = -pi/4; %-pi/4;
-rotationMax = pi/4; %pi/4;
-translationMin = -300; %-300;
-translationMax = 300; %300;
+noiseMagnitude = 5;% 0; % 0.5;
+rotationMin    = -30;% -pi/4; %-pi/4;
+rotationMax    = 30;% pi/4; %pi/4;
+translationMin = -360;% -300; %-300;
+translationMax = 360;% 300; %300;
+
 % If a file containing transforms to apply to the shapes is provided, load it. Else, create the transforms and store them in a file.
 % Transform file format: each line contains the 6 parameters of a transform (3 for translation, 3 for rotation)
 
