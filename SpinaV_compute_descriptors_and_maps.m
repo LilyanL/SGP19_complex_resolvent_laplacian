@@ -307,12 +307,12 @@ for i = 1:length(pairs_array)
             drawnow;
 
             tic;
-            [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
+            [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
             fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
 
             % visualize the computed maps with BCICP
             figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
-            MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
+            MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('standard Mask');
 
         end
 
@@ -320,17 +320,11 @@ for i = 1:length(pairs_array)
         fprintf('Refining the maps with ZoomOut...');
         fprintf(' ------------------------------\n');
 
-        % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
-        tic;
-        T_source2target_new = refineZoomOut(T_source2target, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
-        fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method: %f seconds\n', toc);
-
-
-        if(any(strcmp(firstElements, 'BCICP')))
-            % refine the BCICP mapping with zoomOut
+        if(any(strcmp(firstElements, 'zoomOut')))
+            % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
             tic;
-            T_source2target_new = refineZoomOut(T_source2target_bcicp, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
-            fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
+            T_source2target_new = refineZoomOut(T_source2target, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+            fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
         end
 
         curPairShapes.mappings{nbMethod} = T_source2target_new;
