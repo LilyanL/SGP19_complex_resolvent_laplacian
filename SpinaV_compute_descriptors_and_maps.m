@@ -189,17 +189,36 @@ for i = 1:length(pairs_array)
     % for each descriptor combination method, compute the functional map
     for nbMethod = 1:length(listMethodsMaps)
         method = listMethodsMaps{nbMethod};
+        maskMethodName = '';
+        
+    % Extract all the first elements of the cell array to find the mask method name
+    firstElements = cellfun(@(x) x{1}, method, 'UniformOutput', false);
+
+        if(any(strcmp(firstElements, 'standard')))
+            maskMethodName = 'standard';
+        elseif(any(strcmp(firstElements, 'slant')))
+            maskMethodName = 'slant';
+        elseif(any(strcmp(firstElements, 'complexResolvent')))
+            maskMethodName = 'complexResolvent';
+        end
 
         % load the descriptors from the PairShapes object
-        fctTarget = []; fctSource = []; methodString = [];
+        fctTarget = []; fctSource = []; methodString = [maskMethodName ' + '];
         for j = 1:length(method)
-            methodString = [methodString method{j}{1} ' ' method{j}{2} ' + '];
-            if strcmp(method{j}{2}, 'global')
-                fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
-                fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
-            elseif strcmp(method{j}{2}, 'local')
-                fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
-                fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
+            if(length(method{j}) == 2)
+                methodString = [methodString method{j}{1} ' ' method{j}{2} ' + ' ];
+
+                if strcmp(method{j}{2}, 'global')
+                    fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
+                    fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
+                elseif strcmp(method{j}{2}, 'local')
+                    fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
+                    fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
+                end
+
+
+            elseif(length(method{j}) == 1)
+                methodString = [methodString method{j}{1} ' + '];
             end
         end
         methodString = methodString(1:end-3); % remove the last ' + '
@@ -213,53 +232,64 @@ for i = 1:length(pairs_array)
         fprintf(' ------------------------------ \n');  
 
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
+        mapFigureTitle = '';
 
-        % optimize the functional map using the standard or the complex resolvent Laplacian term
-        fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-        [C_target2source, M_old] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+        % If the standard Laplacian term is used, compute the standard Laplacian matrices
+        if any(strcmp(maskMethodName, 'standard'))
+            fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+            [C_target2source, ~] = compute_fMap(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+            mapFigureTitle = 'standard Mask';
+        end
+       
+        % If the slanted Laplacian term is used, compute the slanted Laplacian matrices
+        if any(strcmp(maskMethodName, 'slant'))
+            fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+            [C_target2source, ~] = compute_fMap(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
+            mapFigureTitle = 'slanted Mask';
+        end
 
-        fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-        [C_target2source_slant, M_slant] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
-
-        fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
-        [C_target2source_new, M_new] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
+        % If the complex resolvent Laplacian term is used, compute the complex resolvent Laplacian matrices
+        if any(strcmp(maskMethodName, 'complexResolvent'))
+            fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
+            mapFigureTitle = 'complex resolvent Mask';
+        end
 
         T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
-        T_source2target_slant = fMAP.fMap2pMap(BTarget,BSource,C_target2source_slant);
-        T_source2target_new = fMAP.fMap2pMap(BTarget,BSource,C_target2source_new);
 
         % visualize the computed maps
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
-        subplot(1,3,1);
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title('standard Mask');
-        subplot(1,3,2);
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant,plotOptions{:}); title('slanted Mask');
-        subplot(1,3,3);
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('complex resolvent Mask');
+        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title(mapFigureTitle);
 
         % Store the mappings in the PairShapes object
-        curPairShapes.mappings{nbMethod} = [T_source2target, T_source2target_slant, T_source2target_new];
-        curPairShapes.mappings_Labels{nbMethod} ={[methodString ' - standard'], [methodString ' - slant'], [methodString ' - complRes']};
+        curPairShapes.mappings{nbMethod} = [T_source2target];
+        curPairShapes.mappings_Labels{nbMethod} ={methodString };
+
+        if(any(strcmp(firstElements, 'BCICP')))
+
 
         fprintf(' \n------------------------------ ');
         fprintf('Computing the reverse maps for BCICP...');
         fprintf(' ------------------------------\n');  
         drawnow;
 
-        % compute the functional and geometric map from source to target
-        fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-        [C_source2target, M_old] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+        if any(strcmp(maskMethodName, 'standard'))
+            fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+            [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+        end
 
-        fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-        [C_source2target_slant, M_slant] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+        if any(strcmp(maskMethodName, 'slant'))
+            fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+            [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+        end
 
-        fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
-        [C_source2target_new, M_new] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+        if any(strcmp(maskMethodName, 'complexResolvent'))
+            fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+            [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+        end
 
         T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
-        T_target2source_slant = fMAP.fMap2pMap(BSource,BTarget,C_source2target_slant);
-        T_target2source_new = fMAP.fMap2pMap(BSource,BTarget,C_source2target_new);
-
+        
         % TODO: store the maps in the PairShapes object
 
         % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
@@ -270,26 +300,14 @@ for i = 1:length(pairs_array)
         drawnow;
 
         tic;
-        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  3);
-        fprintf('Time needed to compute the BCICP maps on the standard Laplacian term method: %f seconds\n', toc);
-
-        tic;
-        [T_target2source_slant_bcicp, T_source2target_slant_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_slant, T_source2target_slant, 3);
-        fprintf('Time needed to compute the BCICP maps on the slanted Laplacian term method: %f seconds\n', toc);
-
-        tic;
-        [T_target2source_new_bcicp, T_source2target_new_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source_new, T_source2target_new, 3);
-        fprintf('Time needed to compute the BCICP maps on the complex resolvent Laplacian term method: %f seconds\n', toc);
+        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
+        fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
 
         % visualize the computed maps with BCICP
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
-        subplot(1,3,1);
         MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
-        subplot(1,3,2);
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_slant_bcicp,plotOptions{:}); title('slanted Mask');
-        subplot(1,3,3);
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new_bcicp,plotOptions{:}); title('complex resolvent Mask');
-        drawnow;
+  
+    end
 
         fprintf(' ------------------------------ ');
         fprintf('Refining the maps with ZoomOut...');
@@ -297,50 +315,51 @@ for i = 1:length(pairs_array)
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
         tic;
-        T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+        T_source2target_new = refineZoomOut(T_source2target, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
         fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method: %f seconds\n', toc);
 
-        curPairShapes.mappings{nbMethod} = [curPairShapes.mappings{nbMethod}; T_source2target_new];
-        curPairShapes.mappings_Labels{nbMethod} = [curPairShapes.mappings_Labels{nbMethod} ' - zoomOut'];
 
+        if(any(strcmp(firstElements, 'BCICP')))
         % refine the BCICP mapping with zoomOut
         tic;
-        T_source2target_new_bcicp = refineZoomOut(T_source2target_new_bcicp, size(C_target2source_new,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
+        T_source2target_new = refineZoomOut(T_source2target_bcicp, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
         fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
+        end
         
-        % TBD: store the maps in the PairShapes object
+        curPairShapes.mappings{nbMethod} = T_source2target_new;
+        curPairShapes.mappings_Labels{nbMethod} = methodString;
 
         fprintf(' \n------------------------------ ');
         fprintf('Visualizing the maps...');
         fprintf(' ------------------------------\n'); 
-
-        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
         sourceTitle = ['Source shape (' curFolderName ')'];
         targetTitle = ['Target shape (' curFolderName ')'];
 
+        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
         figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
-        % on a new figure, visualize the mapping with complex resolvent Laplacian term refined with BCICP and the drilling paths
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString '+ BCICP and drilling paths (direct)'],'NumberTitle','off');
-        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new_bcicp, 'direct');
 
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString '+ BCICP and drilling paths (connex)'],'NumberTitle','off');
-        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new_bcicp, 'connex', [7 7]);
+        fprintf(' ------------------------------ ');
+        fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
+
+        fprintf(' ------------------------------ ');
+        fprintf('Exporting the maps...');
+        fprintf(' ------------------------------\n'); 
 
         % export the maps to text files for later use
-        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_standard.txt'];
-        dlmwrite(map_name, T_source2target, 'delimiter', ' ');
-        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_slant.txt'];
-        dlmwrite(map_name, T_source2target_slant, 'delimiter', ' ');
-        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_complRes.txt'];
-        dlmwrite(map_name, T_source2target_new, 'delimiter', ' ');
+        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_' maskMethodName '.txt'];
+    end
+
+    pairs_array{i} = curPairShapes;
+
+    registration_errors = curPairShapes.computeRegistrationErrors();
 
     end
 end
