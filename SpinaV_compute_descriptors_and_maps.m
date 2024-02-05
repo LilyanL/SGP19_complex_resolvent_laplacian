@@ -60,6 +60,9 @@ displayShapePairsWithPaths = true;
 displayBasisFunctions = true;
 displayDescriptorsGlobal = true;
 displayDescriptorsLocal = true;
+%% Figures used to display the final results
+figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
+mean_errors_array = {};
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
 % Create cell array of absolute paths to the meshes
@@ -139,8 +142,8 @@ for i = 1:length(pairs_array)
         % store the noise vectors and the transforms in the PairShapes object
         curPairShapesCopy.noise_vector_source = [];
         curPairShapesCopy.noise_vector_target = noise;
-        curPairShapesCopy.transform_source = rigidtform3d;
-        curPairShapesCopy.transform_target = transformTarget;
+        curPairShapesCopy.transform_source{1} = rigidtform3d;
+        curPairShapesCopy.transform_target{1} = transformTarget;
 
         pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
     end
@@ -348,6 +351,23 @@ for i = 1:length(pairs_array)
 
         fprintf(' ------------------------------ ');
         fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
+        fprintf(' ------------------------------\n'); 
+
+        % compute the rigid transforms between the shapes using all the maps obtained so far
+        %all_Transforms is a cell array containing the transforms for each method
+        %The first dimension is the method used
+        %The second dimension is the transform for the whole shape or for each vertebra if a segmentation is provided
+        % function used: all_Transforms = computeCorrespondances(M, N, all_matches, all_matches_names, manual_vertebra_segmentation, transformComputationMethods, partial_manual_landmarks_vertices);
+        
+        % Point cloud on partial vertebra
+        %curPoints =  vertebrae_segmentation{i};
+
+        % Transform computations
+        disp(['==== Computing rigid transform for vertebra #']);%, num2str(i)])
+        [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, 1:shapeSource.nv, T_source2target_new, 'ransac');
+        disp('====  Rigid transform computed');
+
+        curPairShapes.registrations_source_to_target{nbMethod}{1} = source_T_target;
 
         fprintf(' ------------------------------ ');
         fprintf('Exporting the maps...');
@@ -360,8 +380,96 @@ for i = 1:length(pairs_array)
     pairs_array{i} = curPairShapes;
 
     registration_errors = curPairShapes.computeRegistrationErrors();
+    average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
+    mean_errors_array{end+1} = average_errors;
 
+    % Update the final error figure by plotting all the errors stored in the mean_errors_array
+    figure(figErrors);
+
+    % Plot the errors
+    % Plot error of X component for each pair of shapes and each method
+    
+    % Error of X component for each pair of shapes for method 1
+    subplot(2,3,1);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
     end
+    
+    hold on;
+    title('X component error');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
+    
+    % Plot error of Y component for each pair of shapes and each method
+    subplot(2,3,2);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
+    end
+    title('Y component error');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
+    
+    % Plot error of Z component for each pair of shapes and each method
+    subplot(2,3,3);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+2*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
+    end
+    hold on;
+    title('Z component error');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
+    
+    % Plot error of rotation R for each pair of shapes and each method
+    subplot(2,3,4);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
+    end
+    hold on;
+    title('Rotation error (R)');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
+    
+    % Plot error of rotation P for each pair of shapes and each method
+
+    % Error of translation for each pair of shapes for method 1
+    subplot(2,3,5);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
+    end
+    hold on;
+    title('Rotation error (P)');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
+
+    % Plot error of rotation Yaw for each pair of shapes and each method
+   
+    % Error of scaling for each pair of shapes for method 1
+    subplot(2,3,6);
+    hold off;
+    for nbMethod = 1:length(listMethodsMaps)
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        hold on;
+    end
+    hold on;
+    title('Rotation error (Y)');
+    xlabel('Pair of shapes');
+    ylabel('Error');
+    legend('show');
 end
 
 
