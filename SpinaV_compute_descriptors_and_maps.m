@@ -369,6 +369,53 @@ for i = 1:length(pairs_array)
 
         curPairShapes.registrations_source_to_target{nbMethod}{1} = source_T_target;
 
+        % PLOT REGISTERED SHAPES
+        % This displays the vertebrae of the source shape  mapped to the target shape
+        % The source shape is displayed as a black mesh and the target shape is displayed as a full color mesh
+        % The registration is done using the vertebrae segmentation and breakpoints can be added to the display loop
+        % in the function plotTwoShapes
+        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - Moving source to target'],'NumberTitle','off');
+        hold on;
+        title('Shape source moved to shape target !');
+
+        manual_vertebra_segmentation_colors_per_vertex = {ones(shapeSource.nv, 3)};
+        transformToPlot = {source_T_target}; 
+        plotTwoShapes(shapeTarget,shapeSource, {1:shapeSource.nv}, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
+
+
+        trajOnSource = curPairShapes.trajectories_source;
+        indexEntryPointsSource = trajOnSource(:,1);
+        indexEndPointsSource = trajOnSource(:,2);
+
+        entryPointsSource = shapeSource.surface.VERT(indexEntryPointsSource', :);
+        endPointsSource = shapeSource.surface.VERT(indexEndPointsSource', :);
+
+        trajColors = hsv(size(entryPointsSource, 1));
+
+        % For each drilling path, identify the corresponding segmentation and apply the corresponding transform
+        for curTrajNb = 1:size(entryPointsSource, 1)
+            curVertebraNumber = 1; %classificationPointsM(curTrajNb);
+            curTransform = transformToPlot{1,1};%TBD: genericity for multiple vertebrae!
+
+            curEntryPointsSource = entryPointsSource(curTrajNb, :);
+            curEndPointsSource = endPointsSource(curTrajNb, :);
+
+            pointCloudentryPointsSource = pointCloud(curEntryPointsSource);
+            pointCloudEndPointsSource = pointCloud(curEndPointsSource);
+
+            %Compute corresponding points using the transform
+            entryPointsTargetVertices = pctransform(pointCloudentryPointsSource, curTransform); %Here we invert the transform because we want to go from M to N
+            endPointsTargetVertices = pctransform(pointCloudEndPointsSource, curTransform);
+
+            entryPointsTargetVertices = entryPointsTargetVertices.Location;
+            endPointsTargetVertices = endPointsTargetVertices.Location;
+
+            curColor = trajColors(curTrajNb, :);
+            [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, 5, 1);
+        end
+        
+
+
         fprintf(' ------------------------------ ');
         fprintf('Exporting the maps...');
         fprintf(' ------------------------------\n'); 
