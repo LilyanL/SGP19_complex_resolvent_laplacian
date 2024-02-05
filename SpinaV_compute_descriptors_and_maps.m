@@ -49,12 +49,12 @@ listMethodsMaps = {
     %{{'HKS', 'global'}};
     %{{'HKS', 'local'}};
     %{{'HKS', 'global'}, {'HKS', 'local'}};
-%
+    %
     %{{'WKS', 'local'}, {'HKS', 'local'}};
     %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
     {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'BCICP'}, {'zoomOut'}};
     {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'zoomOut'}};
-};
+    };
 
 %% Display options
 displayShapePairs = true;
@@ -138,9 +138,9 @@ for i = 1:length(pairs_array)
             noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
             transformTarget = rigidtform3d;
         else
-        % add noise and transform the target shape
-        noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
-        [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
+            % add noise and transform the target shape
+            noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
+            [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
         end
         % store the noise vectors and the transforms in the PairShapes object
@@ -197,9 +197,9 @@ for i = 1:length(pairs_array)
     for nbMethod = 1:length(listMethodsMaps)
         method = listMethodsMaps{nbMethod};
         maskMethodName = '';
-        
-    % Extract all the first elements of the cell array to find the mask method name
-    firstElements = cellfun(@(x) x{1}, method, 'UniformOutput', false);
+
+        % Extract all the first elements of the cell array to find the mask method name
+        firstElements = cellfun(@(x) x{1}, method, 'UniformOutput', false);
 
         if(any(strcmp(firstElements, 'standard')))
             maskMethodName = 'standard';
@@ -236,7 +236,7 @@ for i = 1:length(pairs_array)
 
         fprintf(' \n------------------------------ ');
         fprintf(['Computing the functional map for vertebra number ' num2str(i) ' out of ' num2str(length(pairs_array))]);
-        fprintf(' ------------------------------ \n');  
+        fprintf(' ------------------------------ \n');
 
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
         mapFigureTitle = '';
@@ -247,7 +247,7 @@ for i = 1:length(pairs_array)
             [C_target2source, ~] = compute_fMap(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
             mapFigureTitle = 'standard Mask';
         end
-       
+
         % If the slanted Laplacian term is used, compute the slanted Laplacian matrices
         if any(strcmp(maskMethodName, 'slant'))
             fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
@@ -275,50 +275,50 @@ for i = 1:length(pairs_array)
         if(any(strcmp(firstElements, 'BCICP')))
 
 
-        fprintf(' \n------------------------------ ');
-        fprintf('Computing the reverse maps for BCICP...');
-        fprintf(' ------------------------------\n');  
-        drawnow;
+            fprintf(' \n------------------------------ ');
+            fprintf('Computing the reverse maps for BCICP...');
+            fprintf(' ------------------------------\n');
+            drawnow;
 
-        if any(strcmp(maskMethodName, 'standard'))
-            fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-            [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+            if any(strcmp(maskMethodName, 'standard'))
+                fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+                [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+            end
+
+            if any(strcmp(maskMethodName, 'slant'))
+                fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+                [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+            end
+
+            if any(strcmp(maskMethodName, 'complexResolvent'))
+                fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+            end
+
+            T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
+
+            % TODO: store the maps in the PairShapes object
+
+            % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
+
+            fprintf(' \n------------------------------ ');
+            fprintf('Refining the maps with BCICP...');
+            fprintf(' ------------------------------\n');
+            drawnow;
+
+            tic;
+            [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
+            fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
+
+            % visualize the computed maps with BCICP
+            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
+            MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
+
         end
-
-        if any(strcmp(maskMethodName, 'slant'))
-            fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-            [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
-        end
-
-        if any(strcmp(maskMethodName, 'complexResolvent'))
-            fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
-            [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
-        end
-
-        T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
-        
-        % TODO: store the maps in the PairShapes object
-
-        % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
-
-        fprintf(' \n------------------------------ ');
-        fprintf('Refining the maps with BCICP...');
-        fprintf(' ------------------------------\n');  
-        drawnow;
-
-        tic;
-        [T_target2source_bcicp, T_source2target_bcicp] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
-        fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
-
-        % visualize the computed maps with BCICP
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_bcicp,plotOptions{:}); title('standard Mask');
-  
-    end
 
         fprintf(' ------------------------------ ');
         fprintf('Refining the maps with ZoomOut...');
-        fprintf(' ------------------------------\n'); 
+        fprintf(' ------------------------------\n');
 
         % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
         tic;
@@ -327,18 +327,18 @@ for i = 1:length(pairs_array)
 
 
         if(any(strcmp(firstElements, 'BCICP')))
-        % refine the BCICP mapping with zoomOut
-        tic;
-        T_source2target_new = refineZoomOut(T_source2target_bcicp, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
-        fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
+            % refine the BCICP mapping with zoomOut
+            tic;
+            T_source2target_new = refineZoomOut(T_source2target_bcicp, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + BCICP + zoomOut']);
+            fprintf('Time needed to compute the zoomOut map on the complex resolvent Laplacian term method with BCICP: %f seconds\n', toc);
         end
-        
+
         curPairShapes.mappings{nbMethod} = T_source2target_new;
         curPairShapes.mappings_Labels{nbMethod} = methodString;
 
         fprintf(' \n------------------------------ ');
         fprintf('Visualizing the maps...');
-        fprintf(' ------------------------------\n'); 
+        fprintf(' ------------------------------\n');
 
         %Display both shapes with the drilling paths
         %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
@@ -355,14 +355,14 @@ for i = 1:length(pairs_array)
 
         fprintf(' ------------------------------ ');
         fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
-        fprintf(' ------------------------------\n'); 
+        fprintf(' ------------------------------\n');
 
         % compute the rigid transforms between the shapes using all the maps obtained so far
         %all_Transforms is a cell array containing the transforms for each method
         %The first dimension is the method used
         %The second dimension is the transform for the whole shape or for each vertebra if a segmentation is provided
         % function used: all_Transforms = computeCorrespondances(M, N, all_matches, all_matches_names, manual_vertebra_segmentation, transformComputationMethods, partial_manual_landmarks_vertices);
-        
+
         % Point cloud on partial vertebra
         %curPoints =  vertebrae_segmentation{i};
 
@@ -383,7 +383,7 @@ for i = 1:length(pairs_array)
         title('Shape source moved to shape target !');
 
         manual_vertebra_segmentation_colors_per_vertex = {ones(shapeSource.nv, 3)};
-        transformToPlot = {source_T_target}; 
+        transformToPlot = {source_T_target};
         plotTwoShapes(shapeTarget,shapeSource, {1:shapeSource.nv}, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
 
 
@@ -417,12 +417,12 @@ for i = 1:length(pairs_array)
             curColor = trajColors(curTrajNb, :);
             [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, 5, 1);
         end
-        
+
 
 
         fprintf(' ------------------------------ ');
         fprintf('Exporting the maps...');
-        fprintf(' ------------------------------\n'); 
+        fprintf(' ------------------------------\n');
 
         % export the maps to text files for later use
         map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_' maskMethodName '.txt'];
@@ -439,7 +439,7 @@ for i = 1:length(pairs_array)
 
     % Plot the errors
     % Plot error of X component for each pair of shapes and each method
-    
+
     % Error of X component for each pair of shapes for method 1
     subplot(2,3,1);
     hold off;
@@ -447,13 +447,13 @@ for i = 1:length(pairs_array)
         plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
-    
+
     hold on;
     title('X component error');
     xlabel('Pair of shapes');
     ylabel('Error');
     legend('show');
-    
+
     % Plot error of Y component for each pair of shapes and each method
     subplot(2,3,2);
     hold off;
@@ -465,7 +465,7 @@ for i = 1:length(pairs_array)
     xlabel('Pair of shapes');
     ylabel('Error');
     legend('show');
-    
+
     % Plot error of Z component for each pair of shapes and each method
     subplot(2,3,3);
     hold off;
@@ -478,7 +478,7 @@ for i = 1:length(pairs_array)
     xlabel('Pair of shapes');
     ylabel('Error');
     legend('show');
-    
+
     % Plot error of rotation R for each pair of shapes and each method
     subplot(2,3,4);
     hold off;
@@ -491,7 +491,7 @@ for i = 1:length(pairs_array)
     xlabel('Pair of shapes');
     ylabel('Error');
     legend('show');
-    
+
     % Plot error of rotation P for each pair of shapes and each method
 
     % Error of translation for each pair of shapes for method 1
@@ -508,7 +508,7 @@ for i = 1:length(pairs_array)
     legend('show');
 
     % Plot error of rotation Yaw for each pair of shapes and each method
-   
+
     % Error of scaling for each pair of shapes for method 1
     subplot(2,3,6);
     hold off;
