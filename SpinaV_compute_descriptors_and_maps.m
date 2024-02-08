@@ -146,8 +146,14 @@ for i = 1:length(pairs_array)
         % store the noise vectors and the transforms in the PairShapes object
         curPairShapesCopy.noise_vector_source = [];
         curPairShapesCopy.noise_vector_target = noise;
+
+        % for each segment, store the transform
+        for nbSegment=1:size(curPairShapesCopy.segmentations_source,2)
+            curPairShapesCopy.transform_target{nbSegment} = transformTarget;
+        end
+
         curPairShapesCopy.transform_source{1} = rigidtform3d;
-        curPairShapesCopy.transform_target{1} = transformTarget;
+        %curPairShapesCopy.transform_target{1} = transformTarget;
 
         pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
     end
@@ -361,11 +367,17 @@ for i = 1:length(pairs_array)
         %curPoints =  vertebrae_segmentation{i};
 
         % Transform computations
-        disp(['==== Computing rigid transform for vertebra #']);%, num2str(i)])
-        [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, 1:shapeSource.nv, T_source2target_new, 'ransac');
-        disp('====  Rigid transform computed');
+        source_segmentation = curPairShapes.segmentations_source;
+        source_segmentations_labels = curPairShapes.segmentations_source_labels;
 
-        curPairShapes.registrations_source_to_target{nbMethod}{1} = source_T_target;
+        for nbSegment=1:size(source_segmentation,2)
+            curPointsIndices =  source_segmentation{i};
+            disp(['==== Computing rigid transform for vertebra #', num2str(nbSegment)]);
+            [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, curPointsIndices, T_source2target_new, 'ransac');
+            disp('====  Rigid transform computed');
+            curPairShapes.registrations_source_to_target{nbMethod}{nbSegment} = source_T_target;
+        end
+
 
         % PLOT REGISTERED SHAPES
         % This displays the vertebrae of the source shape  mapped to the target shape
@@ -377,8 +389,8 @@ for i = 1:length(pairs_array)
         title('Shape source moved to shape target !');
 
         manual_vertebra_segmentation_colors_per_vertex = {ones(shapeSource.nv, 3)};
-        transformToPlot = {source_T_target};
-        plotTwoShapes(shapeTarget,shapeSource, {1:shapeSource.nv}, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
+        transformToPlot = curPairShapes.registrations_source_to_target{nbMethod};
+        plotTwoShapes(shapeTarget,shapeSource, curPairShapes.segmentations_source, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
 
 
         trajOnSource = curPairShapes.trajectories_source;
@@ -438,7 +450,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,1);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
 
@@ -452,7 +464,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,2);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     title('Y component error');
@@ -464,7 +476,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,3);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+2*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+2*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
@@ -477,7 +489,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,4);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
@@ -492,7 +504,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,5);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
@@ -507,7 +519,7 @@ for i = 1:length(pairs_array)
     subplot(2,3,6);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array), 'DisplayName', ['Method ' num2str(nbMethod)]);
+        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
