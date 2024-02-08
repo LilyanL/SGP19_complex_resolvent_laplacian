@@ -30,6 +30,12 @@ classdef PairShapes
         trajectories_source %mapping can directly be applied
         trajectories_target %mapping is trickier to apply (reverse search)
 
+        segmentations_source %cell array of segmentations. Each cell contains a vector of indices of vertices belonging to the segment
+        segmentations_source_labels %cell array of segmentations names
+
+        segmentations_target %cell array of segmentations. Each cell contains a vector of indices of vertices belonging to the segment
+        segmentations_target_labels %cell array of segmentations names
+
         
 
     end
@@ -46,7 +52,7 @@ classdef PairShapes
         % - registration_errors: A cell array containing the registration errors for each method and segment
         function registration_errors = computeRegistrationErrors(obj)
             num_methods = numel(obj.mappings_Labels);
-            num_segments = numel(obj.transform_source{1});
+            num_segments = numel(obj.registrations_source_to_target{1});
             registration_errors = cell(num_methods, num_segments);
             
             for i = 1:num_methods
