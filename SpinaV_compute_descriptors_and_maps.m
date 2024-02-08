@@ -53,7 +53,7 @@ listMethodsMaps = {
     %{{'WKS', 'local'}, {'HKS', 'local'}};
     %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
     {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'BCICP'}, {'zoomOut'}};
-    {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'zoomOut'}};
+    %{{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'zoomOut'}};
     };
 
 %% Display options
@@ -90,9 +90,9 @@ fprintf(' \n------------------------------ ');
 fprintf('Copying the shapes and applying random noise and transforms...');
 fprintf(' ------------------------------ \n\n');
 
-nbCopies = 5;
+nbCopies = 3;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
-noiseMagnitude = 5;% 0; % 0.5;
+noiseMagnitude = 5; %5;% 0; % 0.5;
 rotationMin    = -30;% -pi/4; %-pi/4;
 rotationMax    = 30;% pi/4; %pi/4;
 translationMin = -360;% -300; %-300;
@@ -130,19 +130,20 @@ for i = 1:length(pairs_array)
     for j = 1:nbCopies
         curPairShapesCopy = curPairShapes;
 
+        % TBD: check if commented code can be deleted
         % add noise and transform the source shape %mesh, noise, translation, rotation
         %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
         %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
-        if j ==1 || mod(j, nbCopies) == 1
-            noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
-            transformTarget = rigidtform3d;
-        else
+        % if j ==1 || mod(j, nbCopies) == 1
+        %     noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
+        %     transformTarget = rigidtform3d;
+        % else
             % add noise and transform the target shape
             noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
             [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
-        end
+        % end
         % store the noise vectors and the transforms in the PairShapes object
         curPairShapesCopy.noise_vector_source = [];
         curPairShapesCopy.noise_vector_target = noise;
