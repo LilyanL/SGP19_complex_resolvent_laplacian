@@ -22,7 +22,7 @@ meshOptions = {'IfComputeGeoDist',false,'IfComputeLB',true,'IfComputeNormals',tr
 % params to visualize the maps
 plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 %% read the mesh
-mesh_dir = '../data/PAIR_TEST_TEMP/';
+mesh_dir = '../data/PAIR_007/';
 shapeTarget_name = 'target.off';
 shapeSource_name = 'source.off';
 shapeTarget = MESH.MESH_IO.read_shape([mesh_dir, shapeTarget_name]);
@@ -40,8 +40,8 @@ shapeSource = MESH.preprocess(shapeSource,meshOptions{:});
 BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
 EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2); 
 
-fctTarget_all = heatKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimes); %fctTarget_all = fMAP.waveKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimes);
-fctSource_all = heatKernelSignature(BSource, EvSource, shapeSource.A, numTimes);    %fctSource_all = fMAP.waveKernelSignature(BSource, EvSource, shapeSource.A, numTimes);
+fctTarget_all = waveKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimes); %fctTarget_all = fMAP.waveKernelSignature(BTarget, EvTarget, shapeTarget.A, numTimes);
+fctSource_all = waveKernelSignature(BSource, EvSource, shapeSource.A, numTimes);    %fctSource_all = fMAP.waveKernelSignature(BSource, EvSource, shapeSource.A, numTimes);
 fctTarget = fctTarget_all(:,1:numSkip:end);
 fctSource = fctSource_all(:,1:numSkip:end);
 
@@ -89,7 +89,7 @@ for iPlot=1:numPlots
 end
 
 %% Select a file to load landmarks based descriptors
-use_lm = true;
+use_lm = false;
 load_lm = false;
 
 if(use_lm)
@@ -217,8 +217,8 @@ end
 drawnow;
 
 %% Append the landmarks based descriptors to the WKS descriptors
-fctTarget = [lm_fct_Target]; %fctTarget = [fctTarget,lm_fct_Target];
-fctSource = [lm_fct_Source]; %fctSource = [fctSource,lm_fct_Source];
+%fctTarget = [lm_fct_Target]; %fctTarget = [fctTarget,lm_fct_Target];
+%fctSource = [lm_fct_Source]; %fctSource = [fctSource,lm_fct_Source];
 
 end
 
