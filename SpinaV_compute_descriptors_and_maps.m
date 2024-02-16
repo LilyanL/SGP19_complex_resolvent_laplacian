@@ -86,9 +86,9 @@ drawnow;
 % For each pair of shapes, create nbCopies copies with random noise and transforms using function transformShape (limits are provided as parameters)
 % transformShape(mesh, noiseMagnitude, rotationMin, rotationMax, translationMin, translationMax)
 
-fprintf(' \n------------------------------ ');
+fprintf(' \n============================== ');
 fprintf('Copying the shapes and applying random noise and transforms...');
-fprintf(' ------------------------------ \n\n');
+fprintf(' ============================== \n');
 
 nbCopies = 3;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
@@ -394,6 +394,7 @@ for i = 1:length(pairs_array)
         display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
 
+        %%
         fprintf(' ------------------------------ ');
         fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
         fprintf(' ------------------------------\n');
