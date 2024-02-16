@@ -130,6 +130,45 @@ for i = 1:length(pairs_array)
     for j = 1:nbCopies
         curPairShapesCopy = curPairShapes;
 
+        % for each segment, apply a (nbSegment-1)*5 degree of rotation around the z axis before applying the random noise and global transform to the whole shape
+        for nbSegment=2:size(curPairShapesCopy.segmentations_target,2)
+            % Retrieve indices of current vertebra
+            curIndicesToExtract = curPairShapesCopy.segmentations_target{nbSegment};
+
+            % Compute new vertices for current vertebra
+            curArray= curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:);
+            curPointCloud = pointCloud(curArray);
+            curTransform = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*5))); % rotate around z axis by (i-1)*5 degrees
+            curPointCloud = pctransform(curPointCloud, curTransform);
+            curArray = curPointCloud.Location;
+
+            % Update the vertices of the current vertebra
+            curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:) = curArray;
+
+            % Apply same rigid transform to every component of the shape surface
+            curPairShapesCopy.shape_target.surface.X(curIndicesToExtract,:) = curArray(:,1);
+            curPairShapesCopy.shape_target.surface.Y(curIndicesToExtract,:) = curArray(:,2);
+            curPairShapesCopy.shape_target.surface.Z(curIndicesToExtract,:) = curArray(:,3);
+
+            % Multiply transform_target for the current segment with curTransform
+            curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(curTransform.A * curPairShapesCopy.transform_target{nbSegment}.A);
+    
+        end
+
+        % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
+        figure('Name', ['Shape ' num2str(i) ' before and after rotation'],'NumberTitle','off');
+        subplot(1,2,2);
+        title('After rotation');
+        display_shape(curPairShapesCopy.shape_target);
+        hold on;
+
+        subplot(1,2,1);
+        title('Before rotation');
+        display_shape(curPairShapes.shape_target);
+        hold on;
+    
+
+
         % TBD: check if commented code can be deleted
         % add noise and transform the source shape %mesh, noise, translation, rotation
         %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
@@ -150,7 +189,8 @@ for i = 1:length(pairs_array)
 
         % for each segment, store the transform
         for nbSegment=1:size(curPairShapesCopy.segmentations_source,2)
-            curPairShapesCopy.transform_target{nbSegment} = transformTarget;
+            % Update the transform for the current segment by multiplying it with the transformTarget
+            curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(transformTarget.A * curPairShapesCopy.transform_target{nbSegment}.A);
         end
 
         curPairShapesCopy.transform_source{1} = rigidtform3d;
@@ -372,7 +412,21 @@ for i = 1:length(pairs_array)
         source_segmentations_labels = curPairShapes.segmentations_source_labels;
 
         for nbSegment=1:size(source_segmentation,2)
-            curPointsIndices =  source_segmentation{i};
+            % Create a temp figure to display the segment of the source shape being registered and the matching points on the target shape
+            % figure('Name', [num2str(i) ' - Segment ' num2str(nbSegment) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+            % hold on;
+            % %subplot(1,2,1);
+            % title('Segment of source shape');
+            % scatter3(shapeSource.surface.VERT(source_segmentation{nbSegment},1), shapeSource.surface.VERT(source_segmentation{nbSegment},2), shapeSource.surface.VERT(source_segmentation{nbSegment},3), 5, 'filled');
+            % hold on;
+            % 
+            % % Display the matching points on the target shape for the current segment
+            % %subplot(1,2,2);
+            % %title('Segment of target shape');
+            % matchingIndices = T_source2target_new(source_segmentation{nbSegment});
+            % scatter3(shapeTarget.surface.VERT(matchingIndices,1), shapeTarget.surface.VERT(matchingIndices,2), shapeTarget.surface.VERT(matchingIndices,3), 5, 'filled');
+
+            curPointsIndices =  source_segmentation{nbSegment};
             disp(['==== Computing rigid transform for vertebra #', num2str(nbSegment)]);
             [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, curPointsIndices, T_source2target_new, 'ransac');
             disp('====  Rigid transform computed');
@@ -405,8 +459,15 @@ for i = 1:length(pairs_array)
 
         % For each drilling path, identify the corresponding segmentation and apply the corresponding transform
         for curTrajNb = 1:size(entryPointsSource, 1)
-            curVertebraNumber = 1; %classificationPointsM(curTrajNb);
-            curTransform = transformToPlot{1,1};%TBD: genericity for multiple vertebrae!
+
+            % determine to which segment the current trajectory belongs, i.e. what is the index of the segment containing the entry and end points
+            for nbSegment=1:size( curPairShapes.segmentations_source,2)
+                if any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEntryPointsSource(curTrajNb))) && any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEndPointsSource(curTrajNb)))
+                    break;
+                end
+            end
+
+            curTransform = transformToPlot{1,nbSegment};%TBD: genericity for multiple vertebrae!
 
             curEntryPointsSource = entryPointsSource(curTrajNb, :);
             curEndPointsSource = endPointsSource(curTrajNb, :);
