@@ -33,6 +33,8 @@ classdef PairShapes
         segmentations_source %cell array of segmentations. Each cell contains a vector of indices of vertices belonging to the segment
         segmentations_source_labels %cell array of segmentations names
 
+        segmentation_source_upper_part %array of indices of vertices belonging to the upper part of the source shape
+
         segmentations_target %cell array of segmentations. Each cell contains a vector of indices of vertices belonging to the segment
         segmentations_target_labels %cell array of segmentations names
 
