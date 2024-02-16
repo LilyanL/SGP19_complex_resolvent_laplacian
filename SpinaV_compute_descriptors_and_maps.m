@@ -207,7 +207,7 @@ drawnow;
 if(displayBasisFunctions)
     fprintf('\n===============================')
     fprintf('Computing and displaying the basis functions...');
-    fprintf('=============================== \n\n');
+    fprintf('=============================== \n');
 
     CollectionDisplayBasisFunctions(pairs_array, k1, k2);
 end
@@ -215,7 +215,7 @@ drawnow;
 %% For each method, compute the global descriptors for each shape
 fprintf(' \n=============================== ');
 fprintf('Computing the global descriptors for each shape...');
-fprintf(' =============================== \n\n');
+fprintf(' =============================== \n');
 pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
 drawnow;
 %% For each method, compute and plot the local descriptors for each shape
@@ -282,7 +282,7 @@ for i = 1:length(pairs_array)
         EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
         fprintf(' \n------------------------------ ');
-        fprintf(['Computing the functional map for vertebra number ' num2str(i) ' out of ' num2str(length(pairs_array))]);
+        fprintf(['Computing the functional map for pair of shapes #' num2str(i) ' out of ' num2str(length(pairs_array))]);
         fprintf(' ------------------------------ \n');
 
         fprintf('Computing the functional map using %s descriptors...\n', methodString);
@@ -291,14 +291,14 @@ for i = 1:length(pairs_array)
         % If the standard Laplacian term is used, compute the standard Laplacian matrices
         if any(strcmp(maskMethodName, 'standard'))
             fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-            [C_target2source, ~] = compute_fMap(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
             mapFigureTitle = 'standard Mask';
         end
 
         % If the slanted Laplacian term is used, compute the slanted Laplacian matrices
         if any(strcmp(maskMethodName, 'slant'))
             fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-            [C_target2source, ~] = compute_fMap(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
+            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
             mapFigureTitle = 'slanted Mask';
         end
 
@@ -329,12 +329,12 @@ for i = 1:length(pairs_array)
 
             if any(strcmp(maskMethodName, 'standard'))
                 fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-                [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
             end
 
             if any(strcmp(maskMethodName, 'slant'))
                 fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-                [C_source2target, ~] = compute_fMap(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
             end
 
             if any(strcmp(maskMethodName, 'complexResolvent'))
@@ -517,9 +517,10 @@ for i = 1:length(pairs_array)
     end
 
     hold on;
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
     title('X component error');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
 
     % Plot error of Y component for each pair of shapes and each method
@@ -529,9 +530,12 @@ for i = 1:length(pairs_array)
         plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
+
+    hold on;
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
     title('Y component error');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
 
     % Plot error of Z component for each pair of shapes and each method
@@ -542,22 +546,26 @@ for i = 1:length(pairs_array)
         hold on;
     end
     hold on;
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
     title('Z component error');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
 
     % Plot error of rotation R for each pair of shapes and each method
     subplot(2,3,4);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        y = cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array);
+        y = rad2deg(y);
+        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
-    title('Rotation error (R)');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+    title('Rotation error (Rx)');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
 
     % Plot error of rotation P for each pair of shapes and each method
@@ -566,13 +574,16 @@ for i = 1:length(pairs_array)
     subplot(2,3,5);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        y = cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array);
+        y = rad2deg(y);
+        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
-    title('Rotation error (P)');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+    title('Rotation error (Ry)');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
 
     % Plot error of rotation Yaw for each pair of shapes and each method
@@ -581,14 +592,19 @@ for i = 1:length(pairs_array)
     subplot(2,3,6);
     hold off;
     for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        y = cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array);
+        y = rad2deg(y);
+        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
     end
     hold on;
-    title('Rotation error (Y)');
-    xlabel('Pair of shapes');
-    ylabel('Error');
+    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+    title('Rotation error (Rz)');
+    xlabel('Pair of shapes #');
+    ylabel('Error (mm)');
     legend('show');
+
+    drawnow    
 end
 
 
