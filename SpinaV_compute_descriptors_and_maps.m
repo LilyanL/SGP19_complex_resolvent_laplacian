@@ -444,8 +444,7 @@ for i = 1:length(pairs_array)
             curPairShapes.registrations_source_to_target{nbMethod}{nbSegment} = source_T_target;
         end
 
-
-        % PLOT REGISTERED SHAPES
+        %% PLOT REGISTERED SHAPES
         % This displays the vertebrae of the source shape  mapped to the target shape
         % The source shape is displayed as a black mesh and the target shape is displayed as a full color mesh
         % The registration is done using the vertebrae segmentation and breakpoints can be added to the display loop
@@ -512,6 +511,8 @@ for i = 1:length(pairs_array)
     registration_errors = curPairShapes.computeRegistrationErrors();
     average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
     mean_errors_array{end+1} = average_errors;
+
+    %%
 
     % Update the final error figure by plotting all the errors stored in the mean_errors_array
     figure(figErrors);
