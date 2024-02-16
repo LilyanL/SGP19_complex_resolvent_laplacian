@@ -428,6 +428,14 @@ for i = 1:length(pairs_array)
             % scatter3(shapeTarget.surface.VERT(matchingIndices,1), shapeTarget.surface.VERT(matchingIndices,2), shapeTarget.surface.VERT(matchingIndices,3), 5, 'filled');
 
             curPointsIndices =  source_segmentation{nbSegment};
+            
+            % If segmentation_source_upper_part is not empty, use it to keep only indices corresponding to the upper part of the vertebra
+            if ~isempty(curPairShapes.segmentation_source_upper_part)
+                curPointsIndices = intersect(curPointsIndices, curPairShapes.segmentation_source_upper_part);
+                % display the percentage of points kept
+                disp(['Percentage of points kept for vertebra #', num2str(nbSegment), ' after upper part segmentation: ', num2str(length(curPointsIndices)/length(source_segmentation{nbSegment})*100), '%']);
+            end
+
             disp(['==== Computing rigid transform for vertebra #', num2str(nbSegment)]);
             [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, curPointsIndices, T_source2target_new, 'ransac');
             disp('====  Rigid transform computed');
