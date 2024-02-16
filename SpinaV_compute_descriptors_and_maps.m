@@ -34,7 +34,7 @@ plotOptions = {'IfShowCoverage',false,'OverlayAxis','y','cameraPos',[0,90]};
 
 % list of folders contained in ..\data\ from which we load the meshes and the landmarks to compute the maps
 %listFolders = {'PAIR_001','PAIR_002','PAIR_003', 'PAIR_004', 'PAIR_005'};% };
-listFolders = {'PAIR_008'};
+listFolders = {'PAIR_009'};
 %listFolders = {'PAIR_001','PAIR_002'};
 
 % list of methods to compute the descriptors
@@ -53,7 +53,9 @@ listMethodsMaps = {
     %{{'WKS', 'local'}, {'HKS', 'local'}};
     %{{'WKS', 'global'}, {'HKS', 'global'}, {'WKS', 'local'}, {'HKS', 'local'}};
     {{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'BCICP'}, {'zoomOut'}};
+    %{{'WKS', 'global'}, {'HKS', 'local'}, {'slant'}, {'BCICP'}, {'zoomOut'}};
     %{{'WKS', 'global'}, {'HKS', 'local'}, {'complexResolvent'}, {'zoomOut'}};
+    %{{'WKS', 'global'}, {'HKS', 'local'}, {'standard'}, {'BCICP'}, {'zoomOut'}};
     };
 
 %% Display options
@@ -90,9 +92,9 @@ fprintf(' \n============================== ');
 fprintf('Copying the shapes and applying random noise and transforms...');
 fprintf(' ============================== \n');
 
-nbCopies = 3;
+nbCopies = 5;
 pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
-noiseMagnitude = 5; %5;% 0; % 0.5;
+noiseMagnitude = 2.5; %5;% 0; % 0.5;
 rotationMin    = -30;% -pi/4; %-pi/4;
 rotationMax    = 30;% pi/4; %pi/4;
 translationMin = -360;% -300; %-300;
@@ -354,7 +356,7 @@ for i = 1:length(pairs_array)
             drawnow;
 
             tic;
-            [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  1);
+            [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  5);
             fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
 
             % visualize the computed maps with BCICP
