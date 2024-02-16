@@ -370,7 +370,7 @@ for i = 1:length(pairs_array)
         if(any(strcmp(firstElements, 'zoomOut')))
             % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
             tic;
-            T_source2target_new = refineZoomOut(T_source2target, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+            T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
             fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
         end
 
