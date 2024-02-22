@@ -67,6 +67,8 @@ displayDescriptorsLocal = false;
 
 %% Figures used to display the final results
 figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
+figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
+figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
 mean_errors_array = {};
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
@@ -521,7 +523,7 @@ for i = 1:length(pairs_array)
     average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
     mean_errors_array{end+1} = average_errors;
 
-    %%
+    %% Display the errors on each component of the registration for each pair of shapes and each method
 
     % Update the final error figure by plotting all the errors stored in the mean_errors_array
     figure(figErrors);
@@ -626,8 +628,101 @@ for i = 1:length(pairs_array)
     legend('show');
 
     drawnow    
+
 end
 
+
+    %% On new figures, compute the mean absolute errors, the root mean squared errors for each vertebra and each method
+    % More precisely, for each method, compute the mean absolute error, the root mean squared error and the R2 score for each vertebra
+    % over all the copies of the shapes and store the results as a matrix
+    
+    % Initialize the matrices to store the errors
+    errorsRMSETranslation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
+    errorsMAETranslation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
+    errorsRMSERotation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
+    errorsMAERotation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
+
+    % Loop over all the pairs of shapes to compute the errors
+    %for nbSegment=1:size(curPairShapesCopy.segmentations_source,2)
+    for nbShapes = 1:length(pairs_array)
+        curPairShapes = pairs_array{nbShapes};
+        registration_errors = curPairShapes.computeRegistrationErrors();
+        for nbMethod = 1:length(listMethodsMaps)
+            for nbSegment=1:size(curPairShapes.segmentations_source,2)
+                % Compute the errors for the current pair of shapes and the current method and the current segment
+                
+                %curErrorRMSE is the root mean squared error for the current pair of shapes, the current method and the current segment.
+                %It must be explicitly computed
+                curError = registration_errors{nbMethod, nbSegment};
+                %curErrorRMSETranslation = curError.  
+
+                errorsRMSETranslation(nbMethod, nbSegment) = errorsRMSETranslation(nbMethod, nbSegment) + (curError.error_X^2 + curError.error_Y^2 + curError.error_Z^2);
+                errorsMAETranslation(nbMethod, nbSegment) = errorsMAETranslation(nbMethod, nbSegment) + (abs(curError.error_X) + abs(curError.error_Y) + abs(curError.error_Z));
+                errorsRMSERotation(nbMethod, nbSegment) = errorsRMSERotation(nbMethod, nbSegment) + (curError.error_R^2 + curError.error_P^2 + curError.error_Yaw^2);
+                errorsMAERotation(nbMethod, nbSegment) = errorsMAERotation(nbMethod, nbSegment) + (abs(curError.error_R) + abs(curError.error_P) + abs(curError.error_Yaw));
+            end
+        end
+    end
+
+    % Compute the mean errors for each method and each segment
+    errorsRMSETranslation = errorsRMSETranslation / length(pairs_array);
+    errorsMAETranslation = errorsMAETranslation / length(pairs_array);
+    errorsRMSERotation = errorsRMSERotation / length(pairs_array);
+    errorsMAERotation = errorsMAERotation / length(pairs_array);
+
+    % Apply square root to the mean squared errors to obtain the root mean squared errors
+    errorsRMSETranslation = sqrt(errorsRMSETranslation);
+    errorsRMSERotation = sqrt(errorsRMSERotation);
+
+    % Plot the mean absolute errors, the root mean squared errors for each vertebra and each method
+    x_segments = 1:size(curPairShapesCopy.segmentations_source,2);
+    figure(figErrorsMAE);
+    subplot(2,1,1);
+    for curMethod = 1:length(listMethodsMaps)
+        plot(x_segments, errorsMAETranslation(curMethod,:), '-o', 'DisplayName', ['Method ' num2str(curMethod)]);
+        hold on;
+    end
+
+    title('Mean Absolute Errors - Translation');
+    xlabel('Vertebra #');
+    ylabel('Error (mm)');
+    legend('show');
+
+    subplot(2,1,2);
+    for curMethod = 1:length(listMethodsMaps)
+        plot(x_segments, rad2deg(errorsMAERotation(curMethod,:)), '-o', 'DisplayName', ['Method ' num2str(curMethod)]);
+        hold on;
+    end
+
+    title('Mean Absolute Errors - Rotation');
+    xlabel('Vertebra #');
+    ylabel('Error (degrees)');
+    legend('show');
+
+    figure(figErrorsRMSE);
+    subplot(2,1,1);
+    for curMethod = 1:length(listMethodsMaps)
+        plot(x_segments, errorsRMSETranslation(curMethod,:), '-o', 'DisplayName', ['Method ' num2str(curMethod)]);
+        hold on;
+    end
+
+    title('Root Mean Squared Errors - Translation');
+    xlabel('Vertebra #');
+    ylabel('Error (mm)');
+    legend('show');
+
+    subplot(2,1,2);
+    for curMethod = 1:length(listMethodsMaps)
+        plot(x_segments, rad2deg(errorsRMSERotation(curMethod,:)), '-o', 'DisplayName', ['Method ' num2str(curMethod)]);
+        hold on;
+    end
+
+    title('Root Mean Squared Errors - Rotation');
+    xlabel('Vertebra #');
+    ylabel('Error (degrees)');
+    legend('show');
+
+    drawnow;
 
 %% Export all figures
 saveAllFigures(destinationFolder, 'png');
