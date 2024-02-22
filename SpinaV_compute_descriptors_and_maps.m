@@ -242,6 +242,15 @@ for i = 1:length(pairs_array)
     shapeTarget = curPairShapes.shape_target;
     curFolderName = curPairShapes.pair_folder_name;
 
+    % Display the two shapes on the same plot in a new figure
+    figure('Name', ['Shapes ' num2str(i) ' - ' curFolderName],'NumberTitle','off');
+    display_shape(shapeSource);
+    hold on;
+    display_shape(shapeTarget);
+    title(['Shapes ' num2str(i) ' - ' curFolderName]);
+    
+
+
     % for each descriptor combination method, compute the functional map
     for nbMethod = 1:length(listMethodsMaps)
         method = listMethodsMaps{nbMethod};
