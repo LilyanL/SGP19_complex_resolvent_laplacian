@@ -63,9 +63,16 @@ classdef PairShapes
                     registration_error.error_X = obj.transform_target{j}.Translation(1) - obj.registrations_source_to_target{i}{j}.Translation(1);
                     registration_error.error_Y = obj.transform_target{j}.Translation(2) - obj.registrations_source_to_target{i}{j}.Translation(2);
                     registration_error.error_Z = obj.transform_target{j}.Translation(3) - obj.registrations_source_to_target{i}{j}.Translation(3);
-                    registration_error.error_R = obj.transform_target{j}.Rotation(1) - obj.registrations_source_to_target{i}{j}.Rotation(1);
-                    registration_error.error_P = obj.transform_target{j}.Rotation(2) - obj.registrations_source_to_target{i}{j}.Rotation(2);
-                    registration_error.error_Yaw = obj.transform_target{j}.Rotation(3) - obj.registrations_source_to_target{i}{j}.Rotation(3);
+
+                    delta_euler = rotm2eul(obj.transform_target{j}.Rotation) - rotm2eul(obj.registrations_source_to_target{i}{j}.Rotation);
+
+                    registration_error.error_R = delta_euler(1);
+                    registration_error.error_P = delta_euler(2);
+                    registration_error.error_Yaw = delta_euler(3);
+
+                    %registration_error.error_R = obj.transform_target{j}.Rotation(1) - obj.registrations_source_to_target{i}{j}.Rotation(1);
+                    %registration_error.error_P = obj.transform_target{j}.Rotation(2) - obj.registrations_source_to_target{i}{j}.Rotation(2);
+                    %registration_error.error_Yaw = obj.transform_target{j}.Rotation(3) - obj.registrations_source_to_target{i}{j}.Rotation(3);
                     
                     registration_errors{i, j} = registration_error;
                 end
