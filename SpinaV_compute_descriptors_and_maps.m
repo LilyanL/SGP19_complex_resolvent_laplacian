@@ -108,544 +108,544 @@ for curNoiseValue = noiseMagnitudeVec
         mkdir(destinationFolder);
     end
 
-pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
-pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
+    pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
+    pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
 
 
-% If a file containing transforms to apply to the shapes is provided, load it. Else, create the transforms and store them in a file.
-% Transform file format: each line contains the 6 parameters of a transform (3 for translation, 3 for rotation)
+    % If a file containing transforms to apply to the shapes is provided, load it. Else, create the transforms and store them in a file.
+    % Transform file format: each line contains the 6 parameters of a transform (3 for translation, 3 for rotation)
 
-transformsParameters = zeros(nbCopies*length(pairs_array), 6);
-transformParametersFilePath = [pwd '\..\data\TRANSFORMS_001\'];
+    transformsParameters = zeros(nbCopies*length(pairs_array), 6);
+    transformParametersFilePath = [pwd '\..\data\TRANSFORMS_001\'];
 
-if exist(transformParametersFilePath, 'dir')
-    transformParametersFilePath = [transformParametersFilePath 'transformsParameters.txt'];
-    if exist(transformParametersFilePath, 'file')
-        transformsParameters = dlmread(transformParametersFilePath);
-        if(size(transformsParameters,1) < nbCopies*length(pairs_array))
-            error(['The number of transforms in the file is stricly inferior to the number of copies and pairs of shapes (' num2str(nbCopies*length(pairs_array)) '). Change folder or randomly generate transforms in the code.']);
-        end
-    else
-        transformsParameters = zeros(length(pairs_array), 6);
-        for i = 1:(nbCopies*length(pairs_array))
-            if i ==1 || mod(i, nbCopies) == 1
-                transformsParameters(i,:) = [0, 0, 0, 0, 0, 0]; % no noise or transform is applied to have a clean copy for comparison
-                continue;
+    if exist(transformParametersFilePath, 'dir')
+        transformParametersFilePath = [transformParametersFilePath 'transformsParameters.txt'];
+        if exist(transformParametersFilePath, 'file')
+            transformsParameters = dlmread(transformParametersFilePath);
+            if(size(transformsParameters,1) < nbCopies*length(pairs_array))
+                error(['The number of transforms in the file is stricly inferior to the number of copies and pairs of shapes (' num2str(nbCopies*length(pairs_array)) '). Change folder or randomly generate transforms in the code.']);
             end
-            transformsParameters(i,:) = [randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax])];
+        else
+            transformsParameters = zeros(length(pairs_array), 6);
+            for i = 1:(nbCopies*length(pairs_array))
+                if i ==1 || mod(i, nbCopies) == 1
+                    transformsParameters(i,:) = [0, 0, 0, 0, 0, 0]; % no noise or transform is applied to have a clean copy for comparison
+                    continue;
+                end
+                transformsParameters(i,:) = [randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([translationMin, translationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax]), randi([rotationMin, rotationMax])];
+            end
+            dlmwrite([pwd '\transforms.txt'], transformsParameters, 'delimiter', ' ');
         end
-        dlmwrite([pwd '\transforms.txt'], transformsParameters, 'delimiter', ' ');
     end
-end
 
-for i = 1:length(pairs_array)
-    display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
-    curPairShapes = pairs_array{i};
-    for j = 1:nbCopies
-        curPairShapesCopy = curPairShapes;
+    for i = 1:length(pairs_array)
+        display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
+        curPairShapes = pairs_array{i};
+        for j = 1:nbCopies
+            curPairShapesCopy = curPairShapes;
 
-        % for each segment, apply a (nbSegment-1)*5 degree of rotation around the z axis before applying the random noise and global transform to the whole shape
-        for nbSegment=2:size(curPairShapesCopy.segmentations_target,2)
-            % Retrieve indices of current vertebra
-            curIndicesToExtract = curPairShapesCopy.segmentations_target{nbSegment};
+            % for each segment, apply a (nbSegment-1)*5 degree of rotation around the z axis before applying the random noise and global transform to the whole shape
+            for nbSegment=2:size(curPairShapesCopy.segmentations_target,2)
+                % Retrieve indices of current vertebra
+                curIndicesToExtract = curPairShapesCopy.segmentations_target{nbSegment};
 
-            % Compute new vertices for current vertebra
-            curArray= curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:);
-            curPointCloud = pointCloud(curArray);
-            curTransform = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*5))); % rotate around z axis by (i-1)*5 degrees
-            curPointCloud = pctransform(curPointCloud, curTransform);
-            curArray = curPointCloud.Location;
+                % Compute new vertices for current vertebra
+                curArray= curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:);
+                curPointCloud = pointCloud(curArray);
+                curTransform = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*5))); % rotate around z axis by (i-1)*5 degrees
+                curPointCloud = pctransform(curPointCloud, curTransform);
+                curArray = curPointCloud.Location;
 
-            % Update the vertices of the current vertebra
-            curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:) = curArray;
+                % Update the vertices of the current vertebra
+                curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:) = curArray;
 
-            % Apply same rigid transform to every component of the shape surface
-            curPairShapesCopy.shape_target.surface.X(curIndicesToExtract,:) = curArray(:,1);
-            curPairShapesCopy.shape_target.surface.Y(curIndicesToExtract,:) = curArray(:,2);
-            curPairShapesCopy.shape_target.surface.Z(curIndicesToExtract,:) = curArray(:,3);
+                % Apply same rigid transform to every component of the shape surface
+                curPairShapesCopy.shape_target.surface.X(curIndicesToExtract,:) = curArray(:,1);
+                curPairShapesCopy.shape_target.surface.Y(curIndicesToExtract,:) = curArray(:,2);
+                curPairShapesCopy.shape_target.surface.Z(curIndicesToExtract,:) = curArray(:,3);
 
-            % Multiply transform_target for the current segment with curTransform
-            curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(curTransform.A * curPairShapesCopy.transform_target{nbSegment}.A);
-    
-        end
+                % Multiply transform_target for the current segment with curTransform
+                curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(curTransform.A * curPairShapesCopy.transform_target{nbSegment}.A);
 
-        % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
-        figure('Name', ['Shape ' num2str(i) ' before and after rotation'],'NumberTitle','off');
-        subplot(1,2,2);
-        title('After rotation');
-        display_shape(curPairShapesCopy.shape_target);
-        hold on;
+            end
 
-        subplot(1,2,1);
-        title('Before rotation');
-        display_shape(curPairShapes.shape_target);
-        hold on;
-    
+            % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
+            figure('Name', ['Shape ' num2str(i) ' before and after rotation'],'NumberTitle','off');
+            subplot(1,2,2);
+            title('After rotation');
+            display_shape(curPairShapesCopy.shape_target);
+            hold on;
+
+            subplot(1,2,1);
+            title('Before rotation');
+            display_shape(curPairShapes.shape_target);
+            hold on;
 
 
-        % TBD: check if commented code can be deleted
-        % add noise and transform the source shape %mesh, noise, translation, rotation
-        %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
-        %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
-        % if j ==1 || mod(j, nbCopies) == 1
-        %     noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
-        %     transformTarget = rigidtform3d;
-        % else
+            % TBD: check if commented code can be deleted
+            % add noise and transform the source shape %mesh, noise, translation, rotation
+            %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
+            %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
+
+            % if j ==1 || mod(j, nbCopies) == 1
+            %     noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
+            %     transformTarget = rigidtform3d;
+            % else
             % add noise and transform the target shape
             noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
             [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
-        % end
-        % store the noise vectors and the transforms in the PairShapes object
-        curPairShapesCopy.noise_vector_source = [];
-        curPairShapesCopy.noise_vector_target = noise;
+            % end
+            % store the noise vectors and the transforms in the PairShapes object
+            curPairShapesCopy.noise_vector_source = [];
+            curPairShapesCopy.noise_vector_target = noise;
 
-        % for each segment, store the transform
-        for nbSegment=1:size(curPairShapesCopy.segmentations_source,2)
-            % Update the transform for the current segment by multiplying it with the transformTarget
-            curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(transformTarget.A * curPairShapesCopy.transform_target{nbSegment}.A);
-        end
-
-        curPairShapesCopy.transform_source{1} = rigidtform3d;
-        %curPairShapesCopy.transform_target{1} = transformTarget;
-
-        pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
-    end
-end
-
-pairs_array = pairs_array_tmp;
-clear pairs_array_tmp;
-drawnow;
-%% Compute and display the basis functions for each shape
-if(displayBasisFunctions)
-    fprintf('\n===============================')
-    fprintf('Computing and displaying the basis functions...');
-    fprintf('=============================== \n');
-
-    CollectionDisplayBasisFunctions(pairs_array, k1, k2);
-end
-drawnow;
-%% For each method, compute the global descriptors for each shape
-fprintf(' \n=============================== ');
-fprintf('Computing the global descriptors for each shape...');
-fprintf(' =============================== \n');
-pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
-drawnow;
-%% For each method, compute and plot the local descriptors for each shape
-fprintf(' \n=============================== ');
-fprintf('Computing the local descriptors for each shape...');
-fprintf(' =============================== \n\n');
-
-num_skip = 15;
-timesteps_lm = 100;
-pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
-drawnow;
-%% Compute the functional maps using different descriptors
-fprintf(' \n=============================== ');
-fprintf('Computing the functional maps...');
-fprintf(' =============================== \n\n');
-
-for i = 1:length(pairs_array)
-    % load the pair of shapes from the array
-    curPairShapes = pairs_array{i};
-
-    shapeSource = curPairShapes.shape_source;
-    shapeTarget = curPairShapes.shape_target;
-    curFolderName = curPairShapes.pair_folder_name;
-
-    % Display the two shapes on the same plot in a new figure
-    figure('Name', ['Shapes ' num2str(i) ' - ' curFolderName],'NumberTitle','off');
-    display_shape(shapeSource);
-    hold on;
-    display_shape(shapeTarget);
-    title(['Shapes ' num2str(i) ' - ' curFolderName]);
-    
-
-
-    % for each descriptor combination method, compute the functional map
-    for nbMethod = 1:length(listMethodsMaps)
-        method = listMethodsMaps{nbMethod};
-        maskMethodName = '';
-
-        % Extract all the first elements of the cell array to find the mask method name
-        firstElements = cellfun(@(x) x{1}, method, 'UniformOutput', false);
-
-        if(any(strcmp(firstElements, 'standard')))
-            maskMethodName = 'standard';
-        elseif(any(strcmp(firstElements, 'slant')))
-            maskMethodName = 'slant';
-        elseif(any(strcmp(firstElements, 'complexResolvent')))
-            maskMethodName = 'complexResolvent';
-        end
-
-        % load the descriptors from the PairShapes object
-        fctTarget = []; fctSource = []; methodString = [maskMethodName ' + '];
-        for j = 1:length(method)
-            if(length(method{j}) == 2)
-                methodString = [methodString method{j}{1} ' ' method{j}{2} ' + ' ];
-
-                if strcmp(method{j}{2}, 'global')
-                    fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
-                    fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
-                elseif strcmp(method{j}{2}, 'local')
-                    fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
-                    fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
-                end
-
-
-            elseif(length(method{j}) == 1)
-                methodString = [methodString method{j}{1} ' + '];
+            % for each segment, store the transform
+            for nbSegment=1:size(curPairShapesCopy.segmentations_source,2)
+                % Update the transform for the current segment by multiplying it with the transformTarget
+                curPairShapesCopy.transform_target{nbSegment} = rigidtform3d(transformTarget.A * curPairShapesCopy.transform_target{nbSegment}.A);
             end
+
+            curPairShapesCopy.transform_source{1} = rigidtform3d;
+            %curPairShapesCopy.transform_target{1} = transformTarget;
+
+            pairs_array_tmp{(i-1)*nbCopies+j} = curPairShapesCopy;
         end
-        methodString = methodString(1:end-3); % remove the last ' + '
+    end
+
+    pairs_array = pairs_array_tmp;
+    clear pairs_array_tmp;
+    drawnow;
+    %% Compute and display the basis functions for each shape
+    if(displayBasisFunctions)
+        fprintf('\n===============================')
+        fprintf('Computing and displaying the basis functions...');
+        fprintf('=============================== \n');
+
+        CollectionDisplayBasisFunctions(pairs_array, k1, k2);
+    end
+    drawnow;
+    %% For each method, compute the global descriptors for each shape
+    fprintf(' \n=============================== ');
+    fprintf('Computing the global descriptors for each shape...');
+    fprintf(' =============================== \n');
+    pairs_array = CollectionComputeGlobalDescriptors(pairs_array, listMethods, k1, k2, numTimesGlobalDescriptors, numSkipGlobalDescriptors, displayDescriptorsGlobal);
+    drawnow;
+    %% For each method, compute and plot the local descriptors for each shape
+    fprintf(' \n=============================== ');
+    fprintf('Computing the local descriptors for each shape...');
+    fprintf(' =============================== \n\n');
+
+    num_skip = 15;
+    timesteps_lm = 100;
+    pairs_array = CollectionComputeLocalDescriptors(pairs_array, listMethods, k1, k2, timesteps_lm, num_skip, displayDescriptorsLocal);
+    drawnow;
+    %% Compute the functional maps using different descriptors
+    fprintf(' \n=============================== ');
+    fprintf('Computing the functional maps...');
+    fprintf(' =============================== \n\n');
+
+    for i = 1:length(pairs_array)
+        % load the pair of shapes from the array
+        curPairShapes = pairs_array{i};
+
+        shapeSource = curPairShapes.shape_source;
+        shapeTarget = curPairShapes.shape_target;
+        curFolderName = curPairShapes.pair_folder_name;
+
+        % Display the two shapes on the same plot in a new figure
+        figure('Name', ['Shapes ' num2str(i) ' - ' curFolderName],'NumberTitle','off');
+        display_shape(shapeSource);
+        hold on;
+        display_shape(shapeTarget);
+        title(['Shapes ' num2str(i) ' - ' curFolderName]);
 
 
-        BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
-        EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
-        fprintf(' \n------------------------------ ');
-        fprintf(['Computing the functional map for pair of shapes #' num2str(i) ' out of ' num2str(length(pairs_array))]);
-        fprintf(' ------------------------------ \n');
+        % for each descriptor combination method, compute the functional map
+        for nbMethod = 1:length(listMethodsMaps)
+            method = listMethodsMaps{nbMethod};
+            maskMethodName = '';
 
-        fprintf('Computing the functional map using %s descriptors...\n', methodString);
-        mapFigureTitle = '';
+            % Extract all the first elements of the cell array to find the mask method name
+            firstElements = cellfun(@(x) x{1}, method, 'UniformOutput', false);
 
-        % If the standard Laplacian term is used, compute the standard Laplacian matrices
-        if any(strcmp(maskMethodName, 'standard'))
-            fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
-            mapFigureTitle = 'standard Mask';
-        end
+            if(any(strcmp(firstElements, 'standard')))
+                maskMethodName = 'standard';
+            elseif(any(strcmp(firstElements, 'slant')))
+                maskMethodName = 'slant';
+            elseif(any(strcmp(firstElements, 'complexResolvent')))
+                maskMethodName = 'complexResolvent';
+            end
 
-        % If the slanted Laplacian term is used, compute the slanted Laplacian matrices
-        if any(strcmp(maskMethodName, 'slant'))
-            fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
-            mapFigureTitle = 'slanted Mask';
-        end
+            % load the descriptors from the PairShapes object
+            fctTarget = []; fctSource = []; methodString = [maskMethodName ' + '];
+            for j = 1:length(method)
+                if(length(method{j}) == 2)
+                    methodString = [methodString method{j}{1} ' ' method{j}{2} ' + ' ];
 
-        % If the complex resolvent Laplacian term is used, compute the complex resolvent Laplacian matrices
-        if any(strcmp(maskMethodName, 'complexResolvent'))
-            fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
-            [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
-            mapFigureTitle = 'complex resolvent Mask';
-        end
+                    if strcmp(method{j}{2}, 'global')
+                        fctTarget = [fctTarget curPairShapes.descriptors_global_target{strcmp(curPairShapes.descriptors_global_target_labels, method{j}{1})}];
+                        fctSource = [fctSource curPairShapes.descriptors_global_source{strcmp(curPairShapes.descriptors_global_source_labels, method{j}{1})}];
+                    elseif strcmp(method{j}{2}, 'local')
+                        fctTarget = [fctTarget curPairShapes.descriptors_local_target{strcmp(curPairShapes.descriptors_local_target_labels, method{j}{1})}];
+                        fctSource = [fctSource curPairShapes.descriptors_local_source{strcmp(curPairShapes.descriptors_local_source_labels, method{j}{1})}];
+                    end
 
-        T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
 
-        % visualize the computed maps
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
-        MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title(mapFigureTitle);
+                elseif(length(method{j}) == 1)
+                    methodString = [methodString method{j}{1} ' + '];
+                end
+            end
+            methodString = methodString(1:end-3); % remove the last ' + '
 
-        % Store the mappings in the PairShapes object
-        curPairShapes.mappings{nbMethod} = [T_source2target];
-        curPairShapes.mappings_Labels{nbMethod} ={methodString };
 
-        if(any(strcmp(firstElements, 'BCICP')))
-
+            BTarget = shapeTarget.evecs(:,1:k1); BSource = shapeSource.evecs(:,1:k2);
+            EvTarget = shapeTarget.evals(1:k1); EvSource = shapeSource.evals(1:k2);
 
             fprintf(' \n------------------------------ ');
-            fprintf('Computing the reverse maps for BCICP...');
-            fprintf(' ------------------------------\n');
-            drawnow;
+            fprintf(['Computing the functional map for pair of shapes #' num2str(i) ' out of ' num2str(length(pairs_array))]);
+            fprintf(' ------------------------------ \n');
 
+            fprintf('Computing the functional map using %s descriptors...\n', methodString);
+            mapFigureTitle = '';
+
+            % If the standard Laplacian term is used, compute the standard Laplacian matrices
             if any(strcmp(maskMethodName, 'standard'))
-                fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
-                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+                fprintf('Computing the functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+                [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'standard');
+                mapFigureTitle = 'standard Mask';
             end
 
+            % If the slanted Laplacian term is used, compute the slanted Laplacian matrices
             if any(strcmp(maskMethodName, 'slant'))
-                fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
-                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+                fprintf('Computing the functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+                [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'slant');
+                mapFigureTitle = 'slanted Mask';
             end
 
+            % If the complex resolvent Laplacian term is used, compute the complex resolvent Laplacian matrices
             if any(strcmp(maskMethodName, 'complexResolvent'))
-                fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
-                [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+                fprintf('Computing the functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+                [C_target2source, ~] = compute_fMap_complRes(shapeTarget,shapeSource,BTarget,BSource,EvTarget,EvSource,fctTarget,fctSource,para, 'complRes');
+                mapFigureTitle = 'complex resolvent Mask';
             end
 
-            T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
+            T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
 
-            % TODO: store the maps in the PairShapes object
+            % visualize the computed maps
+            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
+            MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title(mapFigureTitle);
 
-            % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
+            % Store the mappings in the PairShapes object
+            curPairShapes.mappings{nbMethod} = [T_source2target];
+            curPairShapes.mappings_Labels{nbMethod} ={methodString };
+
+            if(any(strcmp(firstElements, 'BCICP')))
+
+
+                fprintf(' \n------------------------------ ');
+                fprintf('Computing the reverse maps for BCICP...');
+                fprintf(' ------------------------------\n');
+                drawnow;
+
+                if any(strcmp(maskMethodName, 'standard'))
+                    fprintf('Computing the reverse functional map using %s descriptors and the standard Laplacian term...\n', methodString);
+                    [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'standard');
+                end
+
+                if any(strcmp(maskMethodName, 'slant'))
+                    fprintf('Computing the reverse functional map using %s descriptors and the slanted Laplacian term...\n', methodString);
+                    [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'slant');
+                end
+
+                if any(strcmp(maskMethodName, 'complexResolvent'))
+                    fprintf('Computing the reverse functional map using %s descriptors and the complex resolvent Laplacian term...\n', methodString);
+                    [C_source2target, ~] = compute_fMap_complRes(shapeSource,shapeTarget,BSource,BTarget,EvSource,EvTarget,fctSource,fctTarget,para, 'complRes');
+                end
+
+                T_target2source = fMAP.fMap2pMap(BSource,BTarget,C_source2target);
+
+                % TODO: store the maps in the PairShapes object
+
+                % refine the mapping with BCICP ([T21, T12] = bcicp_refine(S1,S2,B1,B2,T21_ini, T12_ini,num_iter))
+
+                fprintf(' \n------------------------------ ');
+                fprintf('Refining the maps with BCICP...');
+                fprintf(' ------------------------------\n');
+                drawnow;
+
+                tic;
+                [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  5);
+                fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
+
+                % visualize the computed maps with BCICP
+                figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
+                MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('standard Mask');
+
+            end
+
+            fprintf(' ------------------------------ ');
+            fprintf('Refining the maps with ZoomOut...');
+            fprintf(' ------------------------------\n');
+
+            if(any(strcmp(firstElements, 'zoomOut')))
+                % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
+                tic;
+                T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+                fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
+            end
+
+            curPairShapes.mappings{nbMethod} = T_source2target_new;
+            curPairShapes.mappings_Labels{nbMethod} = methodString;
 
             fprintf(' \n------------------------------ ');
-            fprintf('Refining the maps with BCICP...');
+            fprintf('Visualizing the maps...');
             fprintf(' ------------------------------\n');
-            drawnow;
 
-            tic;
-            [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  5);
-            fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
+            %Display both shapes with the drilling paths
+            %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
+            sourceTitle = ['Source shape (' curFolderName ')'];
+            targetTitle = ['Target shape (' curFolderName ')'];
 
-            % visualize the computed maps with BCICP
-            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
-            MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('standard Mask');
+            % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
+            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+            display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-        end
-
-        fprintf(' ------------------------------ ');
-        fprintf('Refining the maps with ZoomOut...');
-        fprintf(' ------------------------------\n');
-
-        if(any(strcmp(firstElements, 'zoomOut')))
-            % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
-            tic;
-            T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
-            fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
-        end
-
-        curPairShapes.mappings{nbMethod} = T_source2target_new;
-        curPairShapes.mappings_Labels{nbMethod} = methodString;
-
-        fprintf(' \n------------------------------ ');
-        fprintf('Visualizing the maps...');
-        fprintf(' ------------------------------\n');
-
-        %Display both shapes with the drilling paths
-        %plotName = ['Shapes with drilling paths - Folder ' listFolders{i} ' - FM using descriptors ' methodString ' (direct')];
-        sourceTitle = ['Source shape (' curFolderName ')'];
-        targetTitle = ['Target shape (' curFolderName ')'];
-
-        % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
-        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
-
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
-        display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
+            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+            display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
 
-        %%
-        fprintf(' ------------------------------ ');
-        fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
-        fprintf(' ------------------------------\n');
+            %%
+            fprintf(' ------------------------------ ');
+            fprintf('Computing the rigid transforms between the shapes using all the maps obtained so far...');
+            fprintf(' ------------------------------\n');
 
-        % compute the rigid transforms between the shapes using all the maps obtained so far
-        %all_Transforms is a cell array containing the transforms for each method
-        %The first dimension is the method used
-        %The second dimension is the transform for the whole shape or for each vertebra if a segmentation is provided
-        % function used: all_Transforms = computeCorrespondances(M, N, all_matches, all_matches_names, manual_vertebra_segmentation, transformComputationMethods, partial_manual_landmarks_vertices);
+            % compute the rigid transforms between the shapes using all the maps obtained so far
+            %all_Transforms is a cell array containing the transforms for each method
+            %The first dimension is the method used
+            %The second dimension is the transform for the whole shape or for each vertebra if a segmentation is provided
+            % function used: all_Transforms = computeCorrespondances(M, N, all_matches, all_matches_names, manual_vertebra_segmentation, transformComputationMethods, partial_manual_landmarks_vertices);
 
-        % Point cloud on partial vertebra
-        %curPoints =  vertebrae_segmentation{i};
+            % Point cloud on partial vertebra
+            %curPoints =  vertebrae_segmentation{i};
 
-        % Transform computations
-        source_segmentation = curPairShapes.segmentations_source;
-        source_segmentations_labels = curPairShapes.segmentations_source_labels;
+            % Transform computations
+            source_segmentation = curPairShapes.segmentations_source;
+            source_segmentations_labels = curPairShapes.segmentations_source_labels;
 
-        for nbSegment=1:size(source_segmentation,2)
-            % Create a temp figure to display the segment of the source shape being registered and the matching points on the target shape
-            % figure('Name', [num2str(i) ' - Segment ' num2str(nbSegment) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
-            % hold on;
-            % %subplot(1,2,1);
-            % title('Segment of source shape');
-            % scatter3(shapeSource.surface.VERT(source_segmentation{nbSegment},1), shapeSource.surface.VERT(source_segmentation{nbSegment},2), shapeSource.surface.VERT(source_segmentation{nbSegment},3), 5, 'filled');
-            % hold on;
-            % 
-            % % Display the matching points on the target shape for the current segment
-            % %subplot(1,2,2);
-            % %title('Segment of target shape');
-            % matchingIndices = T_source2target_new(source_segmentation{nbSegment});
-            % scatter3(shapeTarget.surface.VERT(matchingIndices,1), shapeTarget.surface.VERT(matchingIndices,2), shapeTarget.surface.VERT(matchingIndices,3), 5, 'filled');
+            for nbSegment=1:size(source_segmentation,2)
+                % Create a temp figure to display the segment of the source shape being registered and the matching points on the target shape
+                % figure('Name', [num2str(i) ' - Segment ' num2str(nbSegment) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+                % hold on;
+                % %subplot(1,2,1);
+                % title('Segment of source shape');
+                % scatter3(shapeSource.surface.VERT(source_segmentation{nbSegment},1), shapeSource.surface.VERT(source_segmentation{nbSegment},2), shapeSource.surface.VERT(source_segmentation{nbSegment},3), 5, 'filled');
+                % hold on;
+                %
+                % % Display the matching points on the target shape for the current segment
+                % %subplot(1,2,2);
+                % %title('Segment of target shape');
+                % matchingIndices = T_source2target_new(source_segmentation{nbSegment});
+                % scatter3(shapeTarget.surface.VERT(matchingIndices,1), shapeTarget.surface.VERT(matchingIndices,2), shapeTarget.surface.VERT(matchingIndices,3), 5, 'filled');
 
-            curPointsIndices =  source_segmentation{nbSegment};
-            
-            % If segmentation_source_upper_part is not empty, use it to keep only indices corresponding to the upper part of the vertebra
-            if ~isempty(curPairShapes.segmentation_source_upper_part)
-                curPointsIndices = intersect(curPointsIndices, curPairShapes.segmentation_source_upper_part);
-                % display the percentage of points kept
-                disp(['Percentage of points kept for vertebra #', num2str(nbSegment), ' after upper part segmentation: ', num2str(length(curPointsIndices)/length(source_segmentation{nbSegment})*100), '%']);
-            end
+                curPointsIndices =  source_segmentation{nbSegment};
 
-            disp(['==== Computing rigid transform for vertebra #', num2str(nbSegment)]);
-            [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, curPointsIndices, T_source2target_new, 'ransac');
-            disp('====  Rigid transform computed');
-            curPairShapes.registrations_source_to_target{nbMethod}{nbSegment} = source_T_target;
-        end
-
-        %% PLOT REGISTERED SHAPES
-        % This displays the vertebrae of the source shape  mapped to the target shape
-        % The source shape is displayed as a black mesh and the target shape is displayed as a full color mesh
-        % The registration is done using the vertebrae segmentation and breakpoints can be added to the display loop
-        % in the function plotTwoShapes
-        figure('Name', [num2str(i) ' - Folder ' curFolderName ' - Moving source to target'],'NumberTitle','off');
-        hold on;
-        title('Shape source moved to shape target !');
-
-        manual_vertebra_segmentation_colors_per_vertex = {ones(shapeSource.nv, 3)};
-        transformToPlot = curPairShapes.registrations_source_to_target{nbMethod};
-        plotTwoShapes(shapeTarget,shapeSource, curPairShapes.segmentations_source, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
-
-
-        trajOnSource = curPairShapes.trajectories_source;
-        indexEntryPointsSource = trajOnSource(:,1);
-        indexEndPointsSource = trajOnSource(:,2);
-
-        entryPointsSource = shapeSource.surface.VERT(indexEntryPointsSource', :);
-        endPointsSource = shapeSource.surface.VERT(indexEndPointsSource', :);
-
-        trajColors = hsv(size(entryPointsSource, 1));
-
-        % For each drilling path, identify the corresponding segmentation and apply the corresponding transform
-        for curTrajNb = 1:size(entryPointsSource, 1)
-
-            % determine to which segment the current trajectory belongs, i.e. what is the index of the segment containing the entry and end points
-            for nbSegment=1:size( curPairShapes.segmentations_source,2)
-                if any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEntryPointsSource(curTrajNb))) && any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEndPointsSource(curTrajNb)))
-                    break;
+                % If segmentation_source_upper_part is not empty, use it to keep only indices corresponding to the upper part of the vertebra
+                if ~isempty(curPairShapes.segmentation_source_upper_part)
+                    curPointsIndices = intersect(curPointsIndices, curPairShapes.segmentation_source_upper_part);
+                    % display the percentage of points kept
+                    disp(['Percentage of points kept for vertebra #', num2str(nbSegment), ' after upper part segmentation: ', num2str(length(curPointsIndices)/length(source_segmentation{nbSegment})*100), '%']);
                 end
+
+                disp(['==== Computing rigid transform for vertebra #', num2str(nbSegment)]);
+                [source_T_target, ~, ~] = computeTransformBetweenShapes(shapeTarget,shapeSource, curPointsIndices, T_source2target_new, 'ransac');
+                disp('====  Rigid transform computed');
+                curPairShapes.registrations_source_to_target{nbMethod}{nbSegment} = source_T_target;
             end
 
-            curTransform = transformToPlot{1,nbSegment};%TBD: genericity for multiple vertebrae!
+            %% PLOT REGISTERED SHAPES
+            % This displays the vertebrae of the source shape  mapped to the target shape
+            % The source shape is displayed as a black mesh and the target shape is displayed as a full color mesh
+            % The registration is done using the vertebrae segmentation and breakpoints can be added to the display loop
+            % in the function plotTwoShapes
+            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - Moving source to target'],'NumberTitle','off');
+            hold on;
+            title('Shape source moved to shape target !');
 
-            curEntryPointsSource = entryPointsSource(curTrajNb, :);
-            curEndPointsSource = endPointsSource(curTrajNb, :);
+            manual_vertebra_segmentation_colors_per_vertex = {ones(shapeSource.nv, 3)};
+            transformToPlot = curPairShapes.registrations_source_to_target{nbMethod};
+            plotTwoShapes(shapeTarget,shapeSource, curPairShapes.segmentations_source, transformToPlot, manual_vertebra_segmentation_colors_per_vertex);
 
-            pointCloudentryPointsSource = pointCloud(curEntryPointsSource);
-            pointCloudEndPointsSource = pointCloud(curEndPointsSource);
 
-            %Compute corresponding points using the transform
-            entryPointsTargetVertices = pctransform(pointCloudentryPointsSource, curTransform); %Here we invert the transform because we want to go from M to N
-            endPointsTargetVertices = pctransform(pointCloudEndPointsSource, curTransform);
+            trajOnSource = curPairShapes.trajectories_source;
+            indexEntryPointsSource = trajOnSource(:,1);
+            indexEndPointsSource = trajOnSource(:,2);
 
-            entryPointsTargetVertices = entryPointsTargetVertices.Location;
-            endPointsTargetVertices = endPointsTargetVertices.Location;
+            entryPointsSource = shapeSource.surface.VERT(indexEntryPointsSource', :);
+            endPointsSource = shapeSource.surface.VERT(indexEndPointsSource', :);
 
-            curColor = trajColors(curTrajNb, :);
-            [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, 5, 1);
+            trajColors = hsv(size(entryPointsSource, 1));
+
+            % For each drilling path, identify the corresponding segmentation and apply the corresponding transform
+            for curTrajNb = 1:size(entryPointsSource, 1)
+
+                % determine to which segment the current trajectory belongs, i.e. what is the index of the segment containing the entry and end points
+                for nbSegment=1:size( curPairShapes.segmentations_source,2)
+                    if any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEntryPointsSource(curTrajNb))) && any(ismember( curPairShapes.segmentations_source{nbSegment}, indexEndPointsSource(curTrajNb)))
+                        break;
+                    end
+                end
+
+                curTransform = transformToPlot{1,nbSegment};%TBD: genericity for multiple vertebrae!
+
+                curEntryPointsSource = entryPointsSource(curTrajNb, :);
+                curEndPointsSource = endPointsSource(curTrajNb, :);
+
+                pointCloudentryPointsSource = pointCloud(curEntryPointsSource);
+                pointCloudEndPointsSource = pointCloud(curEndPointsSource);
+
+                %Compute corresponding points using the transform
+                entryPointsTargetVertices = pctransform(pointCloudentryPointsSource, curTransform); %Here we invert the transform because we want to go from M to N
+                endPointsTargetVertices = pctransform(pointCloudEndPointsSource, curTransform);
+
+                entryPointsTargetVertices = entryPointsTargetVertices.Location;
+                endPointsTargetVertices = endPointsTargetVertices.Location;
+
+                curColor = trajColors(curTrajNb, :);
+                [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, 5, 1);
+            end
+
+
+
+            fprintf(' ------------------------------ ');
+            fprintf('Exporting the maps...');
+            fprintf(' ------------------------------\n');
+
+            % export the maps to text files for later use
+            map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_' maskMethodName '.txt'];
         end
 
+        pairs_array{i} = curPairShapes;
 
+        registration_errors = curPairShapes.computeRegistrationErrors();
+        average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
+        mean_errors_array{end+1} = average_errors;
 
-        fprintf(' ------------------------------ ');
-        fprintf('Exporting the maps...');
-        fprintf(' ------------------------------\n');
+        %% Display the errors on each component of the registration for each pair of shapes and each method
 
-        % export the maps to text files for later use
-        map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_' maskMethodName '.txt'];
-    end
+        % Update the final error figure by plotting all the errors stored in the mean_errors_array
+        figure(figErrors);
 
-    pairs_array{i} = curPairShapes;
+        % Plot the errors
+        % Plot error of X component for each pair of shapes and each method
 
-    registration_errors = curPairShapes.computeRegistrationErrors();
-    average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
-    mean_errors_array{end+1} = average_errors;
+        % Error of X component for each pair of shapes for method 1
+        subplot(2,3,1);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
 
-    %% Display the errors on each component of the registration for each pair of shapes and each method
-
-    % Update the final error figure by plotting all the errors stored in the mean_errors_array
-    figure(figErrors);
-
-    % Plot the errors
-    % Plot error of X component for each pair of shapes and each method
-
-    % Error of X component for each pair of shapes for method 1
-    subplot(2,3,1);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
-    end
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('X component error');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
 
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('X component error');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
+        % Plot error of Y component for each pair of shapes and each method
+        subplot(2,3,2);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
 
-    % Plot error of Y component for each pair of shapes and each method
-    subplot(2,3,2);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
         hold on;
-    end
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('Y component error');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
 
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('Y component error');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
-
-    % Plot error of Z component for each pair of shapes and each method
-    subplot(2,3,3);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+2*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        % Plot error of Z component for each pair of shapes and each method
+        subplot(2,3,3);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            plot(1:length(mean_errors_array), cellfun(@(x) x(nbMethod+2*length(listMethodsMaps)), mean_errors_array), '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
         hold on;
-    end
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('Z component error');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('Z component error');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
 
-    % Plot error of rotation R for each pair of shapes and each method
-    subplot(2,3,4);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        y = cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array);
-        y = rad2deg(y);
-        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        % Plot error of rotation R for each pair of shapes and each method
+        subplot(2,3,4);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            y = cellfun(@(x) x(nbMethod+3*length(listMethodsMaps)), mean_errors_array);
+            y = rad2deg(y);
+            plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
         hold on;
-    end
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('Rotation error (Rx)');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('Rotation error (Rx)');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
 
-    % Plot error of rotation P for each pair of shapes and each method
+        % Plot error of rotation P for each pair of shapes and each method
 
-    % Error of translation for each pair of shapes for method 1
-    subplot(2,3,5);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        y = cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array);
-        y = rad2deg(y);
-        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        % Error of translation for each pair of shapes for method 1
+        subplot(2,3,5);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            y = cellfun(@(x) x(nbMethod+4*length(listMethodsMaps)), mean_errors_array);
+            y = rad2deg(y);
+            plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
         hold on;
-    end
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('Rotation error (Ry)');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('Rotation error (Ry)');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
 
-    % Plot error of rotation Yaw for each pair of shapes and each method
+        % Plot error of rotation Yaw for each pair of shapes and each method
 
-    % Error of scaling for each pair of shapes for method 1
-    subplot(2,3,6);
-    hold off;
-    for nbMethod = 1:length(listMethodsMaps)
-        y = cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array);
-        y = rad2deg(y);
-        plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+        % Error of scaling for each pair of shapes for method 1
+        subplot(2,3,6);
+        hold off;
+        for nbMethod = 1:length(listMethodsMaps)
+            y = cellfun(@(x) x(nbMethod+5*length(listMethodsMaps)), mean_errors_array);
+            y = rad2deg(y);
+            plot(1:length(mean_errors_array), y, '-o','DisplayName', ['Method ' num2str(nbMethod)]);
+            hold on;
+        end
         hold on;
+        yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
+        title('Rotation error (Rz)');
+        xlabel('Pair of shapes #');
+        ylabel('Error (mm)');
+        legend('show');
+
+        drawnow
+
     end
-    hold on;
-    yline(0, 'Color', 'r', 'LineStyle', '--', 'DisplayName', '0');
-    title('Rotation error (Rz)');
-    xlabel('Pair of shapes #');
-    ylabel('Error (mm)');
-    legend('show');
-
-    drawnow    
-
-end
 
 
     %% On new figures, compute the mean absolute errors, the root mean squared errors for each vertebra and each method
     % More precisely, for each method, compute the mean absolute error, the root mean squared error and the R2 score for each vertebra
     % over all the copies of the shapes and store the results as a matrix
-    
+
     % Initialize the matrices to store the errors
     errorsRMSETranslation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
     errorsMAETranslation = zeros(length(listMethodsMaps), size(curPairShapesCopy.segmentations_source,2));
@@ -660,11 +660,11 @@ end
         for nbMethod = 1:length(listMethodsMaps)
             for nbSegment=1:size(curPairShapes.segmentations_source,2)
                 % Compute the errors for the current pair of shapes and the current method and the current segment
-                
+
                 %curErrorRMSE is the root mean squared error for the current pair of shapes, the current method and the current segment.
                 %It must be explicitly computed
                 curError = registration_errors{nbMethod, nbSegment};
-                %curErrorRMSETranslation = curError.  
+                %curErrorRMSETranslation = curError.
 
                 errorsRMSETranslation(nbMethod, nbSegment) = errorsRMSETranslation(nbMethod, nbSegment) + (curError.error_X^2 + curError.error_Y^2 + curError.error_Z^2);
                 errorsMAETranslation(nbMethod, nbSegment) = errorsMAETranslation(nbMethod, nbSegment) + (abs(curError.error_X) + abs(curError.error_Y) + abs(curError.error_Z));
@@ -737,48 +737,48 @@ end
     %% Open a CSV file to store the errors for the current noise value
     csvFileName = ['results\errors_noise_' num2str(curNoiseValue) '.csv'];
     fid = fopen(csvFileName, 'w');
-% Open a CSV file to store the errors for the current noise value
-csvFileName = ['results\errors_noise_' num2str(curNoiseValue) '.csv'];
-fid = fopen(csvFileName, 'w');
+    % Open a CSV file to store the errors for the current noise value
+    csvFileName = ['results\errors_noise_' num2str(curNoiseValue) '.csv'];
+    fid = fopen(csvFileName, 'w');
 
-% Write separator
-fprintf(fid, 'sep=,\n');
+    % Write separator
+    fprintf(fid, 'sep=,\n');
 
-% Write the header row
-header = 'Method,Segment,Error_RMSE_Translation,Error_MAE_Translation,Error_RMSE_Rotation,Error_MAE_Rotation\n';
-fprintf(fid, header);
+    % Write the header row
+    header = 'Method,Segment,Error_RMSE_Translation,Error_MAE_Translation,Error_RMSE_Rotation,Error_MAE_Rotation\n';
+    fprintf(fid, header);
 
-% Write the errors for each method and each segment
-for nbMethod = 1:length(listMethodsMaps)
-    for nbSegment = 1:size(curPairShapesCopy.segmentations_source,2)
-        % Get the errors for the current method and segment
-        error_RMSE_Translation = errorsRMSETranslation(nbMethod, nbSegment);
-        error_MAE_Translation = errorsMAETranslation(nbMethod, nbSegment);
-        error_RMSE_Rotation = rad2deg(errorsRMSERotation(nbMethod, nbSegment));
-        error_MAE_Rotation = rad2deg(errorsMAERotation(nbMethod, nbSegment));
-        
-        % Write the errors to the CSV file
-        row = [num2str(nbMethod), ',', num2str(nbSegment), ',', num2str(error_RMSE_Translation), ',', num2str(error_MAE_Translation), ',', num2str(error_RMSE_Rotation), ',', num2str(error_MAE_Rotation), '\n'];
-        fprintf(fid, row);
+    % Write the errors for each method and each segment
+    for nbMethod = 1:length(listMethodsMaps)
+        for nbSegment = 1:size(curPairShapesCopy.segmentations_source,2)
+            % Get the errors for the current method and segment
+            error_RMSE_Translation = errorsRMSETranslation(nbMethod, nbSegment);
+            error_MAE_Translation = errorsMAETranslation(nbMethod, nbSegment);
+            error_RMSE_Rotation = rad2deg(errorsRMSERotation(nbMethod, nbSegment));
+            error_MAE_Rotation = rad2deg(errorsMAERotation(nbMethod, nbSegment));
+
+            % Write the errors to the CSV file
+            row = [num2str(nbMethod), ',', num2str(nbSegment), ',', num2str(error_RMSE_Translation), ',', num2str(error_MAE_Translation), ',', num2str(error_RMSE_Rotation), ',', num2str(error_MAE_Rotation), '\n'];
+            fprintf(fid, row);
+        end
     end
-end
 
-% Close the CSV file
-fclose(fid);
-fclose("all");  %dirty
-    
+    % Close the CSV file
+    fclose(fid);
+    fclose("all");  %dirty
 
-%% Export all figures
-saveAllFigures(destinationFolder, 'png');
-saveAllFigures(destinationFolder, 'fig');
 
-%% Save all data
-save(['results\all_data_noise_' num2str(curNoiseValue) '.mat']);
+    %% Export all figures
+    saveAllFigures(destinationFolder, 'png');
+    saveAllFigures(destinationFolder, 'fig');
 
-close all;
-figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
-figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
-figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
+    %% Save all data
+    save(['results\all_data_noise_' num2str(curNoiseValue) '.mat']);
+
+    close all;
+    figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
+    figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
+    figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
 end
 %% Check memory
 memory
