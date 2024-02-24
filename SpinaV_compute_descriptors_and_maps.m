@@ -5,10 +5,10 @@ dbstop if error % debug mode
 
 % create folders to export results and figures
 mkdir results;
-destinationFolder = '.\results\';
+destinationFolder_root = '.\results\';
 
 % Create a subfolder to store the maps
-maps_dir = [destinationFolder 'maps\'];
+maps_dir = [destinationFolder_root 'maps\'];
 mkdir(maps_dir);
 
 %% some parameters
@@ -83,7 +83,6 @@ for i = 1:length(listFolders)
 end
 
 loadOption = 'default'; % 'default' or 'source_only' or 'target_only
-pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
 
 drawnow;
 %% Duplicate the pairs of shapes to apply random noise and transforms to the copies and store them in a temporary cell array
@@ -95,12 +94,23 @@ fprintf('Copying the shapes and applying random noise and transforms...');
 fprintf(' ============================== \n');
 
 nbCopies = 5;
-pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
-noiseMagnitude = 2.5; %5;% 0; % 0.5;
+noiseMagnitudeVec = [0.5 ]; %5;% 0; % 0.5;
 rotationMin    = -30;% -pi/4; %-pi/4;
 rotationMax    = 30;% pi/4; %pi/4;
 translationMin = -360;% -300; %-300;
 translationMax = 360;% 300; %300;
+
+for curNoiseValue = noiseMagnitudeVec
+    noiseMagnitude = curNoiseValue;
+    destinationFolder = [destinationFolder_root 'noise_' num2str(noiseMagnitude) '\'];
+
+    if ~exist(destinationFolder, 'dir')
+        mkdir(destinationFolder);
+    end
+
+pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
+pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
+
 
 % If a file containing transforms to apply to the shapes is provided, load it. Else, create the transforms and store them in a file.
 % Transform file format: each line contains the 6 parameters of a transform (3 for translation, 3 for rotation)
@@ -724,10 +734,51 @@ end
 
     drawnow;
 
+    %% Open a CSV file to store the errors for the current noise value
+    csvFileName = ['results\errors_noise_' num2str(curNoiseValue) '.csv'];
+    fid = fopen(csvFileName, 'w');
+% Open a CSV file to store the errors for the current noise value
+csvFileName = ['results\errors_noise_' num2str(curNoiseValue) '.csv'];
+fid = fopen(csvFileName, 'w');
+
+% Write separator
+fprintf(fid, 'sep=,\n');
+
+% Write the header row
+header = 'Method,Segment,Error_RMSE_Translation,Error_MAE_Translation,Error_RMSE_Rotation,Error_MAE_Rotation\n';
+fprintf(fid, header);
+
+% Write the errors for each method and each segment
+for nbMethod = 1:length(listMethodsMaps)
+    for nbSegment = 1:size(curPairShapesCopy.segmentations_source,2)
+        % Get the errors for the current method and segment
+        error_RMSE_Translation = errorsRMSETranslation(nbMethod, nbSegment);
+        error_MAE_Translation = errorsMAETranslation(nbMethod, nbSegment);
+        error_RMSE_Rotation = rad2deg(errorsRMSERotation(nbMethod, nbSegment));
+        error_MAE_Rotation = rad2deg(errorsMAERotation(nbMethod, nbSegment));
+        
+        % Write the errors to the CSV file
+        row = [num2str(nbMethod), ',', num2str(nbSegment), ',', num2str(error_RMSE_Translation), ',', num2str(error_MAE_Translation), ',', num2str(error_RMSE_Rotation), ',', num2str(error_MAE_Rotation), '\n'];
+        fprintf(fid, row);
+    end
+end
+
+% Close the CSV file
+fclose(fid);
+fclose("all");  %dirty
+    
+
 %% Export all figures
 saveAllFigures(destinationFolder, 'png');
+saveAllFigures(destinationFolder, 'fig');
 
 %% Save all data
-save("results\all_data.mat");
+save(['results\all_data_noise_' num2str(curNoiseValue) '.mat']);
+
+close all;
+figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
+figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
+figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
+end
 %% Check memory
 memory
