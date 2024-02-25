@@ -642,6 +642,195 @@ for curNoiseValue = noiseMagnitudeVec
 
     end
 
+    %% On a new figure, take the first pair of shapes and display the following figures:
+    % Figure 1: the source shape with the drilling paths. All the drilling paths are displayed in the same color (blue)
+    % Figure 2: the target shape with the drilling paths. The target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
+    %            All the drilling paths are displayed in the same color (red)
+    % Figure 3: the target shape with both the ground truth drilling paths and the computed drilling paths. The ground truth drilling paths are displayed in blue and the computed drilling paths are displayed in red.
+    %            Again, the target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
+    % Overall, this allows to visualize with the same camera view the source shape, the target shape and the drilling paths on both shapes and to easily compare the ground truth drilling paths and the computed drilling paths.
+
+    % Take the first pair of shapes
+    curPairShapes = pairs_array{1};
+
+    fig1 = figure('Name', 'Drilling paths comparison - Source goal','NumberTitle','off');
+    % Display the source shape with the drilling paths
+  
+    view(-360,90);
+    hold on;
+    title('Source shape with drilling paths');
+    display_shape(curPairShapes.shape_source);
+    hold on;
+    % Display the drilling paths on the source shape
+    sourceTrajColor = [0 0 1];
+    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+        plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', sourceTrajColor, 'LineWidth', 2);
+    end
+
+    % Get camera view
+    camPos = get(gca, 'CameraPosition');
+    camTgt = get(gca, 'CameraTarget');
+    camUp = get(gca, 'CameraUpVector');
+    camView = [camPos; camTgt; camUp];
+
+    % Display the target shape with the drilling paths
+    % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
+    % Transform the drilling paths by the inverse of the ground truth transform
+
+    fig2 = figure('Name', 'Drilling paths comparison - Target goal','NumberTitle','off');
+    transformedTargetShape = curPairShapes.shape_target;
+    % Loop over the different transforms in transform_target
+    for i = 1:length(curPairShapes.transform_target)
+
+        % Compute the inverse of the ground truth transform
+        groundTruthTransform = curPairShapes.transform_target{i};
+        inverseGroundTruthTransform = invert(groundTruthTransform);
+
+        % Apply the inverse of the ground truth transform to the target shape
+        % Use the target shape segmentation
+        transformedTargetShape.surface.VERT(curPairShapes.segmentations_target{i}, :) = pctransform(pointCloud(curPairShapes.shape_target.surface.VERT(curPairShapes.segmentations_target{i}, :)), inverseGroundTruthTransform).Location;
+
+        subplot(1,3,2);
+        hold off;
+        display_shape(transformedTargetShape);
+        hold on;
+        title('Target shape with drilling paths');
+    end
+    
+    % Display the drilling paths on the target shape
+    groundTruthTrajColor = [0 0 1];
+    computedTrajColor = [1 0 0];
+
+    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+
+        % Identify to which segment the current trajectory belongs
+        for nbSegment=1:size(curPairShapes.segmentations_source,2)
+            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                break;
+            end
+        end
+
+        % Compute the transform for the current segment
+        curRotation = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
+
+        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+
+        % Apply the transform to the source drilling path to bring it to the target shape
+        %curEntry = pctransform(pointCloud(curEntry), curRotation).Location;
+        %curEnd = pctransform(pointCloud(curEnd), curRotation).Location;
+
+        if(curTrajNb<3)
+            curEntry
+            curEnd
+        end
+
+        plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
+    end
+
+    % Apply same camera view as for the source shape
+    set(gca, 'CameraPosition', camView(1,:), 'CameraTarget', camView(2,:), 'CameraUpVector', camView(3,:));
+
+    % Display the target shape with both the ground truth drilling paths and the computed drilling paths
+    % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
+    % Transform the drilling paths by the inverse of the ground truth transform
+
+    fig3 = figure('Name', 'Drilling paths comparison - Target result','NumberTitle','off');
+
+    hold on;
+    title('Target shape with both ground truth and computed drilling paths');
+    display_shape(transformedTargetShape);
+    hold on;
+    % Display the ground truth drilling paths on the target shape
+    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+
+        % Identify to which segment the current trajectory belongs
+        for nbSegment=1:size(curPairShapes.segmentations_source,2)
+            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                break;
+            end
+        end
+
+        % Compute the transform for the current segment
+        curRotation = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
+
+        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+
+        % Apply the transform to the source drilling path to bring it to the target shape
+        %curEntry = pctransform(pointCloud(curEntry), curRotation).Location;
+        %curEnd = pctransform(pointCloud(curEnd), curRotation).Location;
+
+        if(curTrajNb<3)
+            curEntry
+            curEnd
+        end
+
+        plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
+    end
+
+    % Display the computed drilling paths on the target shape
+    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+
+        % Find to which segment the current trajectory belongs
+        for nbSegment=1:size(curPairShapes.segmentations_source,2)
+            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                break;
+            end
+        end
+
+        % Get the computed transform for the current segment
+        computedTransform = curPairShapes.registrations_source_to_target{1}{nbSegment};%TBD: fix this! Poser les calculs, l'ordre de multiplcation des matrices pose problème
+        inverseComputedTransform = invert(computedTransform);
+
+        % Apply the ground truth transform to the source drilling path to bring it to the target shape
+        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+
+        curEntry = pctransform(pointCloud(curEntry), groundTruthTransform).Location;
+        curEnd = pctransform(pointCloud(curEnd), groundTruthTransform).Location;
+
+        % Apply the inverse of the computed transform to the source drilling path to bring it back to the source shape
+        curEntry = pctransform(pointCloud(curEntry), inverseComputedTransform).Location;
+        curEnd = pctransform(pointCloud(curEnd), inverseComputedTransform).Location;
+
+        % Identify to which segment the current trajectory belongs
+        for nbSegment=1:size(curPairShapes.segmentations_source,2)
+            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                break;
+            end
+        end
+
+        % Compute the transform for the current segment
+        curRotation = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
+
+        %curEntry = pctransform(pointCloud(curEntry), invert(curRotation)).Location;
+        %curEnd = pctransform(pointCloud(curEnd), invert(curRotation)).Location;
+
+        % Plot the transformed drilling path
+        plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', computedTrajColor, 'LineWidth', 2);
+    end
+
+    % Apply same camera view as for the source shape
+    set(gca, 'CameraPosition', camView(1,:), 'CameraTarget', camView(2,:), 'CameraUpVector', camView(3,:));
+
+    % Go through the 3 subplots and display the camera view settings
+    for fig = [fig1 fig2 fig3]
+        figure(fig);
+        camPos = get(gca, 'CameraPosition');
+        camTgt = get(gca, 'CameraTarget');
+        camUp = get(gca, 'CameraUpVector');
+        camView = [camPos; camTgt; camUp];
+        disp(['Camera view for subplot ' num2str(i) ':']);
+        disp(camView);
+    end
+
 
     %% On new figures, compute the mean absolute errors, the root mean squared errors for each vertebra and each method
     % More precisely, for each method, compute the mean absolute error, the root mean squared error and the R2 score for each vertebra
