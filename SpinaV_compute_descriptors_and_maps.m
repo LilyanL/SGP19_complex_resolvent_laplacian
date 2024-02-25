@@ -95,6 +95,7 @@ fprintf(' ============================== \n');
 
 nbCopies = 5;
 noiseMagnitudeVec = [0.5 ]; %5;% 0; % 0.5;
+angleTorsionVertebra = 25;
 rotationMin    = -30;% -pi/4; %-pi/4;
 rotationMax    = 30;% pi/4; %pi/4;
 translationMin = -360;% -300; %-300;
@@ -152,7 +153,7 @@ for curNoiseValue = noiseMagnitudeVec
                 % Compute new vertices for current vertebra
                 curArray= curPairShapesCopy.shape_target.surface.VERT(curIndicesToExtract,:);
                 curPointCloud = pointCloud(curArray);
-                curTransform = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*5))); % rotate around z axis by (i-1)*5 degrees
+                curTransform = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
                 curPointCloud = pctransform(curPointCloud, curTransform);
                 curArray = curPointCloud.Location;
 
