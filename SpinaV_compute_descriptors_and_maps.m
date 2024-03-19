@@ -147,6 +147,7 @@ for curNoiseValue = noiseMagnitudeVec
         display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
         curPairShapes = pairs_array{i};
         for j = 1:nbCopies
+            numCurrentFig = 1;
             curPairShapesCopy = curPairShapes;
 
             % for each segment, apply a (nbSegment-1)*5 degree of rotation around the z axis before applying the random noise and global transform to the whole shape
@@ -176,8 +177,8 @@ for curNoiseValue = noiseMagnitudeVec
 
             % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
             figure('Name', ['Shape ' num2str(i) ' before and after rotation'],'NumberTitle','off');
-            subplot(1,2,2);
-            title('After rotation');
+                figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Shapes before (color) and after (black) rotation'],'NumberTitle','off');
+                numCurrentFig = numCurrentFig+1;
             display_shape(curPairShapesCopy.shape_target);
             hold on;
 
@@ -260,7 +261,8 @@ for curNoiseValue = noiseMagnitudeVec
         curFolderName = curPairShapes.pair_folder_name;
 
         % Display the two shapes on the same plot in a new figure
-        figure('Name', ['Shapes ' num2str(i) ' - ' curFolderName],'NumberTitle','off');
+        figure('Name', [num2str(i) '.' num2str(numCurrentFig) '  - Folder ' curFolderName ' - Shapes on same plot' ],'NumberTitle','off');
+        numCurrentFig = numCurrentFig + 1;
         display_shape(shapeSource);
         hold on;
         display_shape(shapeTarget);
@@ -340,7 +342,8 @@ for curNoiseValue = noiseMagnitudeVec
             T_source2target = fMAP.fMap2pMap(BTarget,BSource,C_target2source);
 
             % visualize the computed maps
-            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
+            figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString],'NumberTitle','off');
+            numCurrentFig = numCurrentFig +1;
             MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target,plotOptions{:}); title(mapFigureTitle);
 
             % Store the mappings in the PairShapes object
@@ -386,8 +389,8 @@ for curNoiseValue = noiseMagnitudeVec
                 fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
 
                 % visualize the computed maps with BCICP
-                figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
-                MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('standard Mask');
+                figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
+                numCurrentFig = numCurrentFig + 1;
 
             end
 
@@ -398,10 +401,12 @@ for curNoiseValue = noiseMagnitudeVec
             if(any(strcmp(firstElements, 'zoomOut')))
                 % refine the mapping with zoomOut (final_map = refineZoomOut(initial_matches, initial_dim, S1, S2)
                 tic;
-                T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+                T_source2target_new = refineZoomOut(T_source2target_new, size(C_target2source,1), shapeSource, shapeTarget, [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' + zoomOut']);
+                numCurrentFig = numCurrentFig + 1;
                 fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
             end
-
+    
+            %% 
             curPairShapes.mappings{nbMethod} = T_source2target_new;
             curPairShapes.mappings_Labels{nbMethod} = methodString;
 
@@ -415,10 +420,12 @@ for curNoiseValue = noiseMagnitudeVec
             targetTitle = ['Target shape (' curFolderName ')'];
 
             % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+            figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (direct)'],'NumberTitle','off');
+            numCurrentFig = numCurrentFig + 1;
             display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'direct');
 
-            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+            figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and drilling paths (connex)'],'NumberTitle','off');
+            numCurrentFig = numCurrentFig + 1;
             display_pair_shapes_and_paths(shapeSource, shapeTarget, sourceTitle, targetTitle, curPairShapes.trajectories_source, T_source2target_new, 'connex', [7 7]);
 
 
@@ -475,7 +482,8 @@ for curNoiseValue = noiseMagnitudeVec
             % The source shape is displayed as a black mesh and the target shape is displayed as a full color mesh
             % The registration is done using the vertebrae segmentation and breakpoints can be added to the display loop
             % in the function plotTwoShapes
-            figure('Name', [num2str(i) ' - Folder ' curFolderName ' - Moving source to target'],'NumberTitle','off');
+            figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Moving source to target'],'NumberTitle','off');
+            numCurrentFig = numCurrentFig + 1;
             hold on;
             title('Shape source moved to shape target !');
 
@@ -658,6 +666,7 @@ for curNoiseValue = noiseMagnitudeVec
     curPairShapes = pairs_array{1};
 
     fig1 = figure('Name', 'Drilling paths comparison - Source goal','NumberTitle','off');
+    fig1 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 1 - Plan on source shape'],'NumberTitle','off');
     % Display the source shape with the drilling paths
   
     view(-360,90);
@@ -684,7 +693,7 @@ for curNoiseValue = noiseMagnitudeVec
     % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
     % Transform the drilling paths by the inverse of the ground truth transform
 
-    fig2 = figure('Name', 'Drilling paths comparison - Target goal','NumberTitle','off');
+    fig2 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 2 - Plan on target shape'],'NumberTitle','off');
     transformedTargetShape = curPairShapes.shape_target;
     % Loop over the different transforms in transform_target
     for i = 1:length(curPairShapes.transform_target)
@@ -743,7 +752,7 @@ for curNoiseValue = noiseMagnitudeVec
     % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
     % Transform the drilling paths by the inverse of the ground truth transform
 
-    fig3 = figure('Name', 'Drilling paths comparison - Target result','NumberTitle','off');
+    fig3 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 3 - Transfer to target shape'],'NumberTitle','off');
 
     hold on;
     title('Target shape with both ground truth and computed drilling paths');
