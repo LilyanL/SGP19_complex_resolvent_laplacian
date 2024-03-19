@@ -98,6 +98,8 @@ rotationMax    = 30;% pi/4; %pi/4;
 translationMin = -360;% -300; %-300;
 translationMax = 360;% 300; %300;
 
+centerData = true;
+centerDataOption = 'partial';
 for curNoiseValue = noiseMagnitudeVec
     noiseMagnitude = curNoiseValue;
     destinationFolder = [destinationFolder_root 'noise_' num2str(noiseMagnitude) '\'];
@@ -111,7 +113,7 @@ for curNoiseValue = noiseMagnitudeVec
         mkdir(destinationFolder);
     end
 
-    pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption);
+    pairs_array = CollectionLoadShapes(foldersPaths, meshOptions, displayShapePairs, displayShapePairsWithPaths, loadOption, centerData, centerDataOption);
     pairs_array_tmp = cell(1, length(pairs_array)*nbCopies);
 
 
