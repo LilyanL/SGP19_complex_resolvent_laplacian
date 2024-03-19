@@ -65,10 +65,7 @@ displayBasisFunctions = false;
 displayDescriptorsGlobal = false;
 displayDescriptorsLocal = false;
 
-%% Figures used to display the final results
-figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
-figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
-figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
+%% Data used to display the final results
 mean_errors_array = {};
 
 %% Display all the pairs of meshes and landmarks and pre-process the meshes
@@ -104,6 +101,11 @@ translationMax = 360;% 300; %300;
 for curNoiseValue = noiseMagnitudeVec
     noiseMagnitude = curNoiseValue;
     destinationFolder = [destinationFolder_root 'noise_' num2str(noiseMagnitude) '\'];
+
+    close all;
+    figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
+    figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
+    figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
 
     if ~exist(destinationFolder, 'dir')
         mkdir(destinationFolder);
@@ -965,10 +967,7 @@ for curNoiseValue = noiseMagnitudeVec
     %% Save all data
     save(['results\all_data_noise_' num2str(curNoiseValue) '.mat']);
 
-    close all;
-    figErrors = figure('Name', 'Errors', 'NumberTitle', 'off');
-    figErrorsMAE = figure('Name', 'Mean Absolute Errors', 'NumberTitle', 'off');
-    figErrorsRMSE = figure('Name', 'Root Mean Squared Errors', 'NumberTitle', 'off');
+    
 end
 %% Check memory
 memory
