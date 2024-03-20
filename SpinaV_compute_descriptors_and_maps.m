@@ -383,12 +383,14 @@ for curNoiseValue = noiseMagnitudeVec
 
                 tic;
                 [T_target2source_bcicp, T_source2target_new] = bcicp_refine(shapeSource, shapeTarget, BSource, BTarget, T_target2source, T_source2target,  5);
+                T_source2target_bcicp = T_source2target_new;
                 fprintf('Time needed to compute the BCICP map: %f seconds\n', toc);
 
                 % visualize the computed maps with BCICP
                 figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - FM using descriptors ' methodString ' and BCICP'],'NumberTitle','off');
                 numCurrentFig = numCurrentFig + 1;
 
+                MESH.PLOT.visualize_map_colors(shapeSource,shapeTarget,T_source2target_new,plotOptions{:}); title('After BCICP');
             end
 
             fprintf(' ------------------------------ ');
