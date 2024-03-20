@@ -100,6 +100,11 @@ translationMax = 360;% 300; %300;
 
 centerData = true;
 centerDataOption = 'partial';
+
+ extensionLengthRatio = 0.2;
+ trajectoryWidthMillimeters = 5;
+ trajectoryWidth = trajectoryWidthMillimeters/0.352806/2; %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+
 for curNoiseValue = noiseMagnitudeVec
     noiseMagnitude = curNoiseValue;
     destinationFolder = [destinationFolder_root 'noise_' num2str(noiseMagnitude) '\'];
@@ -527,7 +532,7 @@ for curNoiseValue = noiseMagnitudeVec
                 endPointsTargetVertices = endPointsTargetVertices.Location;
 
                 curColor = trajColors(curTrajNb, :);
-                [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, 5, 1);
+                [mainplotTarget, entryExtensionPlotTarget, endExtensionPlotTarget] = plotTrajectory(entryPointsTargetVertices, endPointsTargetVertices, curColor, trajectoryWidth, extensionLengthRatio);
             end
 
 
@@ -681,6 +686,7 @@ for curNoiseValue = noiseMagnitudeVec
         curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
         curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
         plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', sourceTrajColor, 'LineWidth', 2);
+        plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
     end
 
     % Get camera view
@@ -779,7 +785,7 @@ for curNoiseValue = noiseMagnitudeVec
         %curEntry = pctransform(pointCloud(curEntry), curRotation).Location;
         %curEnd = pctransform(pointCloud(curEnd), curRotation).Location;
 
-        if(curTrajNb<3)
+        plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
             curEntry
             curEnd
         end
@@ -827,7 +833,7 @@ for curNoiseValue = noiseMagnitudeVec
         %curEnd = pctransform(pointCloud(curEnd), invert(curRotation)).Location;
 
         % Plot the transformed drilling path
-        plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', computedTrajColor, 'LineWidth', 2);
+        plotTrajectory(curEntry, curEnd, computedTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
     end
 
     % Apply same camera view as for the source shape
