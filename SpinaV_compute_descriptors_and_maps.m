@@ -531,12 +531,7 @@ for curNoiseValue = noiseMagnitudeVec
 
 
 
-            fprintf(' ------------------------------ ');
-            fprintf('Exporting the maps...');
-            fprintf(' ------------------------------\n');
-
-            % export the maps to text files for later use
-            map_name = [maps_dir num2str(i) ' - map_' curFolderName '_' methodString '_' maskMethodName '.txt'];
+            
         end
 
         pairs_array{i} = curPairShapes;
