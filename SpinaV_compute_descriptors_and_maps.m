@@ -540,6 +540,131 @@ for curNoiseValue = noiseMagnitudeVec
         average_errors = curPairShapes.computeAverageRegistrationErrors(registration_errors);
         mean_errors_array{end+1} = average_errors;
 
+        %% display only selected segments with the maps (the other segments are displayed in gray) on the source shape and
+             % display the whole target shape with the maps and the registered segment in black mesh
+             if false
+                 % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
+                 figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Final','NumberTitle'],'NumberTitle','off');
+
+                 %ax = subplot(1,2,1);
+                 hold on;
+                 meshSOurce = visualize_map_on_target(shapeSource, shapeTarget, T_source2target_bcicp); title('Source');
+                 segment_to_show = 3;
+                 segments_to_hide = [1,2,4,5];
+
+                 showIndex = [];
+                 % For each segment to hide, find faces whose vertices are all in the segment to hide
+                 for curSegNb = 1:length(segment_to_show)
+                     % Retrieve the indices of the vertices of the segment to hide
+                     curIndices = curPairShapes.segmentations_source{segment_to_show(curSegNb)};
+                     curIndices = unique(curIndices(:));
+                     showIndex = [showIndex; curIndices];
+                 end
+
+                 % Plot red points on each vertex of the segment to hide
+                 %scatter3(shapeSource.surface.VERT(curIndices,1), shapeSource.surface.VERT(curIndices,2), shapeSource.surface.VERT(curIndices,3), 5, 'filled', 'red');
+
+                 resultFacesIndex = [];
+                 % Find the faces index whose vertices are all in the segment to hide
+                 matching_faces = []; % Initialize an empty list to store matching face indices
+
+                 % Iterate through each face in the trimesh
+                 for k = 1:size(shapeSource.surface.TRIV, 1)
+                     face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
+                     is_matching = true; % Assume the face matches initially
+
+                     % Check if all vertices of the face are in the vertex list
+                     for j = 1:numel(face)
+                         if ~ismember(face(j), showIndex)
+                             is_matching = false; % If any vertex is not in the list, mark as not matching
+                             break; % No need to continue checking vertices
+                         end
+                     end
+
+                     % If all vertices of the face are in the list, add its index to the result
+                     if is_matching
+                         matching_faces = [matching_faces, k];
+                     end
+                 end
+
+                subMesh = shapeSource;
+                subMesh.surface.VERT = shapeSource.surface.VERT;
+                subMesh.surface.TRIV = shapeSource.surface.TRIV(matching_faces, :);
+
+                subMesh.surface.X = subMesh.surface.VERT(:,1);
+                subMesh.surface.Y = subMesh.surface.VERT(:,2);
+                subMesh.surface.Z = subMesh.surface.VERT(:,3);
+
+                %scatter3(shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), 5, 'filled', 'red');
+                trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
+
+                 figure
+                 axis equal
+                 hold on;
+                 meshTarget = visualize_map_on_source(shapeSource, shapeTarget, T_source2target_bcicp); title('Target with registered segment in black');
+                 meshTarget.FaceAlpha = 1;
+
+                 % Add the segment to the target shape in black mesh
+                 % Retrieve the indices of the vertices of the segment to display
+                 curIndices = curPairShapes.segmentations_source{segment_to_show};
+                 curIndices = unique(curIndices(:));
+
+                 % Retrieve the registration transform for the segment to display
+                    curTransform = curPairShapes.registrations_source_to_target{nbMethod}{segment_to_show};
+
+                    shapeSourceCopy = shapeSource;
+                    % Apply the transform to whole shape
+                    %curArray= shapeTargetCopy.surface.VERT(curIndices,:);
+                    curArray= shapeSourceCopy.surface.VERT;
+                    curPointCloud = pointCloud(curArray);
+                    curMovedPointCloud= pctransform(curPointCloud, (curTransform));
+                    curArrayMoved = curMovedPointCloud.Location;
+                    %shapeTargetCopy.surface.VERT(curIndices,:) = curArrayMoved;
+                    shapeSourceCopy.surface.VERT = curArrayMoved;
+
+                    % Apply same rigid transform to every component of the shape surface
+                    shapeSourceCopy.surface.X = curArrayMoved(:,1);
+                    shapeSourceCopy.surface.Y = curArrayMoved(:,2);
+                    shapeSourceCopy.surface.Z = curArrayMoved(:,3);
+
+                    % Extract a submesh from the main mesh
+                    subMeshIndices = curPairShapes.segmentations_source{segment_to_show};
+
+                    matching_faces = []; % Initialize an empty list to store matching face indices
+                    % Iterate through each face in the trimesh
+                    for k = 1:size(shapeSource.surface.TRIV, 1)
+                        face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
+                        is_matching = true; % Assume the face matches initially
+
+                        % Check if all vertices of the face are in the vertex list
+                        for j = 1:numel(face)
+                            if ~ismember(face(j), subMeshIndices)
+                                is_matching = false; % If any vertex is not in the list, mark as not matching
+                                break; % No need to continue checking vertices
+                            end
+                        end
+
+                        % If all vertices of the face are in the list, add its index to the result
+                        if is_matching
+                            matching_faces = [matching_faces, k];
+                        end
+                    end
+
+                    subMesh = shapeSourceCopy;
+                    subMesh.surface.VERT = shapeSourceCopy.surface.VERT;
+                    subMesh.surface.TRIV = shapeSourceCopy.surface.TRIV(matching_faces, :);
+
+                    subMesh.surface.X = subMesh.surface.VERT(:,1);
+                    subMesh.surface.Y = subMesh.surface.VERT(:,2);
+                    subMesh.surface.Z = subMesh.surface.VERT(:,3);
+
+                    % Plot the submesh as red points
+                    %scatter3(subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 5, 'filled', 'red');
+                    hold on ;
+                    % Plot the submesh with black edges
+                    trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
+                    axis equal;
+             end
         %% Display the errors on each component of the registration for each pair of shapes and each method
 
         % Update the final error figure by plotting all the errors stored in the mean_errors_array
