@@ -148,8 +148,10 @@ for curNoiseValue = noiseMagnitudeVec
         end
     end
 
+    firstCaseDisplayed = false;
     for i = 1:length(pairs_array)
         display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
+        
         curPairShapes = pairs_array{i};
         for j = 1:nbCopies
             numCurrentFig = 1;
@@ -180,34 +182,24 @@ for curNoiseValue = noiseMagnitudeVec
 
             end
 
-            % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
-            figure('Name', ['Shape ' num2str(i) ' before and after rotation'],'NumberTitle','off');
+            if (~firstCaseDisplayed)
+                % Create a figure to display the target shape before and after the rotation (curPairShapesCopy vs curPairShapes)
                 figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Shapes before (color) and after (black) rotation'],'NumberTitle','off');
                 numCurrentFig = numCurrentFig+1;
-            display_shape(curPairShapesCopy.shape_target);
-            hold on;
+                title('Before and after rotation same figure');
+                display_shape(curPairShapesCopy.shape_target);
+                hold on;
+                h = display_shape(curPairShapes.shape_target);
+                set(h, 'edgecolor', 'black');
+                set(h, 'FaceColor', 'none');
+                hold on;
 
-            subplot(1,2,1);
-            title('Before rotation');
-            display_shape(curPairShapes.shape_target);
-            hold on;
+                firstCaseDisplayed = true;
+            end
 
-
-
-            % TBD: check if commented code can be deleted
-            % add noise and transform the source shape %mesh, noise, translation, rotation
-            %noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_source.surface.VERT));
-            %[curPairShapesCopy.shape_source, transformSource] = transformShape(curPairShapesCopy.shape_source, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
-
-            % if j ==1 || mod(j, nbCopies) == 1
-            %     noise = noiseMagnitude * zeros(size(curPairShapesCopy.shape_target.surface.VERT));
-            %     transformTarget = rigidtform3d;
-            % else
-            % add noise and transform the target shape
             noise = noiseMagnitude * randn(size(curPairShapesCopy.shape_target.surface.VERT));
             [curPairShapesCopy.shape_target, transformTarget] = transformShape(curPairShapesCopy.shape_target, noise, transformsParameters((i-1)*nbCopies+j, 1:3), transformsParameters((i-1)*nbCopies+j, 4:6));
 
-            % end
             % store the noise vectors and the transforms in the PairShapes object
             curPairShapesCopy.noise_vector_source = [];
             curPairShapesCopy.noise_vector_target = noise;
