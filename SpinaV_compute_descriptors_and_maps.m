@@ -101,9 +101,9 @@ translationMax = 360;% 300; %300;
 centerData = true;
 centerDataOption = 'partial';
 
- extensionLengthRatio = 0.2;
- trajectoryWidthMillimeters = 5;
- trajectoryWidth = trajectoryWidthMillimeters/0.352806/2; %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+extensionLengthRatio = 0.2;
+trajectoryWidthMillimeters = 5;
+trajectoryWidth = trajectoryWidthMillimeters/0.352806/2; %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
 
 for curNoiseValue = noiseMagnitudeVec
     noiseMagnitude = curNoiseValue;
@@ -151,7 +151,7 @@ for curNoiseValue = noiseMagnitudeVec
     firstCaseDisplayed = false;
     for i = 1:length(pairs_array)
         display(['Creating duplicates for pair ' num2str(i) ' out of ' num2str(length(pairs_array))]);
-        
+
         curPairShapes = pairs_array{i};
         for j = 1:nbCopies
             numCurrentFig = 1;
@@ -404,8 +404,8 @@ for curNoiseValue = noiseMagnitudeVec
                 numCurrentFig = numCurrentFig + 1;
                 fprintf('Time needed to compute the zoomOut map: %f seconds\n', toc);
             end
-    
-            %% 
+
+            %%
             curPairShapes.mappings{nbMethod} = T_source2target_new;
             curPairShapes.mappings_Labels{nbMethod} = methodString;
 
@@ -531,7 +531,7 @@ for curNoiseValue = noiseMagnitudeVec
 
 
 
-            
+
         end
 
         pairs_array{i} = curPairShapes;
@@ -541,130 +541,130 @@ for curNoiseValue = noiseMagnitudeVec
         mean_errors_array{end+1} = average_errors;
 
         %% display only selected segments with the maps (the other segments are displayed in gray) on the source shape and
-             % display the whole target shape with the maps and the registered segment in black mesh
-             if false
-                 % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
-                 figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Final','NumberTitle'],'NumberTitle','off');
+        % display the whole target shape with the maps and the registered segment in black mesh
+        if false
+            % on a new figure, visualize the mapping with complex resolvent Laplacian term and the drilling paths
+            figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Final','NumberTitle'],'NumberTitle','off');
 
-                 %ax = subplot(1,2,1);
-                 hold on;
-                 meshSOurce = visualize_map_on_target(shapeSource, shapeTarget, T_source2target_bcicp); title('Source');
-                 segment_to_show = 3;
-                 segments_to_hide = [1,2,4,5];
+            %ax = subplot(1,2,1);
+            hold on;
+            meshSOurce = visualize_map_on_target(shapeSource, shapeTarget, T_source2target_bcicp); title('Source');
+            segment_to_show = 3;
+            segments_to_hide = [1,2,4,5];
 
-                 showIndex = [];
-                 % For each segment to hide, find faces whose vertices are all in the segment to hide
-                 for curSegNb = 1:length(segment_to_show)
-                     % Retrieve the indices of the vertices of the segment to hide
-                     curIndices = curPairShapes.segmentations_source{segment_to_show(curSegNb)};
-                     curIndices = unique(curIndices(:));
-                     showIndex = [showIndex; curIndices];
-                 end
+            showIndex = [];
+            % For each segment to hide, find faces whose vertices are all in the segment to hide
+            for curSegNb = 1:length(segment_to_show)
+                % Retrieve the indices of the vertices of the segment to hide
+                curIndices = curPairShapes.segmentations_source{segment_to_show(curSegNb)};
+                curIndices = unique(curIndices(:));
+                showIndex = [showIndex; curIndices];
+            end
 
-                 % Plot red points on each vertex of the segment to hide
-                 %scatter3(shapeSource.surface.VERT(curIndices,1), shapeSource.surface.VERT(curIndices,2), shapeSource.surface.VERT(curIndices,3), 5, 'filled', 'red');
+            % Plot red points on each vertex of the segment to hide
+            %scatter3(shapeSource.surface.VERT(curIndices,1), shapeSource.surface.VERT(curIndices,2), shapeSource.surface.VERT(curIndices,3), 5, 'filled', 'red');
 
-                 resultFacesIndex = [];
-                 % Find the faces index whose vertices are all in the segment to hide
-                 matching_faces = []; % Initialize an empty list to store matching face indices
+            resultFacesIndex = [];
+            % Find the faces index whose vertices are all in the segment to hide
+            matching_faces = []; % Initialize an empty list to store matching face indices
 
-                 % Iterate through each face in the trimesh
-                 for k = 1:size(shapeSource.surface.TRIV, 1)
-                     face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
-                     is_matching = true; % Assume the face matches initially
+            % Iterate through each face in the trimesh
+            for k = 1:size(shapeSource.surface.TRIV, 1)
+                face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
+                is_matching = true; % Assume the face matches initially
 
-                     % Check if all vertices of the face are in the vertex list
-                     for j = 1:numel(face)
-                         if ~ismember(face(j), showIndex)
-                             is_matching = false; % If any vertex is not in the list, mark as not matching
-                             break; % No need to continue checking vertices
-                         end
-                     end
-
-                     % If all vertices of the face are in the list, add its index to the result
-                     if is_matching
-                         matching_faces = [matching_faces, k];
-                     end
-                 end
-
-                subMesh = shapeSource;
-                subMesh.surface.VERT = shapeSource.surface.VERT;
-                subMesh.surface.TRIV = shapeSource.surface.TRIV(matching_faces, :);
-
-                subMesh.surface.X = subMesh.surface.VERT(:,1);
-                subMesh.surface.Y = subMesh.surface.VERT(:,2);
-                subMesh.surface.Z = subMesh.surface.VERT(:,3);
-
-                %scatter3(shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), 5, 'filled', 'red');
-                trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
-
-                 figure
-                 axis equal
-                 hold on;
-                 meshTarget = visualize_map_on_source(shapeSource, shapeTarget, T_source2target_bcicp); title('Target with registered segment in black');
-                 meshTarget.FaceAlpha = 1;
-
-                 % Add the segment to the target shape in black mesh
-                 % Retrieve the indices of the vertices of the segment to display
-                 curIndices = curPairShapes.segmentations_source{segment_to_show};
-                 curIndices = unique(curIndices(:));
-
-                 % Retrieve the registration transform for the segment to display
-                    curTransform = curPairShapes.registrations_source_to_target{nbMethod}{segment_to_show};
-
-                    shapeSourceCopy = shapeSource;
-                    % Apply the transform to whole shape
-                    %curArray= shapeTargetCopy.surface.VERT(curIndices,:);
-                    curArray= shapeSourceCopy.surface.VERT;
-                    curPointCloud = pointCloud(curArray);
-                    curMovedPointCloud= pctransform(curPointCloud, (curTransform));
-                    curArrayMoved = curMovedPointCloud.Location;
-                    %shapeTargetCopy.surface.VERT(curIndices,:) = curArrayMoved;
-                    shapeSourceCopy.surface.VERT = curArrayMoved;
-
-                    % Apply same rigid transform to every component of the shape surface
-                    shapeSourceCopy.surface.X = curArrayMoved(:,1);
-                    shapeSourceCopy.surface.Y = curArrayMoved(:,2);
-                    shapeSourceCopy.surface.Z = curArrayMoved(:,3);
-
-                    % Extract a submesh from the main mesh
-                    subMeshIndices = curPairShapes.segmentations_source{segment_to_show};
-
-                    matching_faces = []; % Initialize an empty list to store matching face indices
-                    % Iterate through each face in the trimesh
-                    for k = 1:size(shapeSource.surface.TRIV, 1)
-                        face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
-                        is_matching = true; % Assume the face matches initially
-
-                        % Check if all vertices of the face are in the vertex list
-                        for j = 1:numel(face)
-                            if ~ismember(face(j), subMeshIndices)
-                                is_matching = false; % If any vertex is not in the list, mark as not matching
-                                break; % No need to continue checking vertices
-                            end
-                        end
-
-                        % If all vertices of the face are in the list, add its index to the result
-                        if is_matching
-                            matching_faces = [matching_faces, k];
-                        end
+                % Check if all vertices of the face are in the vertex list
+                for j = 1:numel(face)
+                    if ~ismember(face(j), showIndex)
+                        is_matching = false; % If any vertex is not in the list, mark as not matching
+                        break; % No need to continue checking vertices
                     end
+                end
 
-                    subMesh = shapeSourceCopy;
-                    subMesh.surface.VERT = shapeSourceCopy.surface.VERT;
-                    subMesh.surface.TRIV = shapeSourceCopy.surface.TRIV(matching_faces, :);
+                % If all vertices of the face are in the list, add its index to the result
+                if is_matching
+                    matching_faces = [matching_faces, k];
+                end
+            end
 
-                    subMesh.surface.X = subMesh.surface.VERT(:,1);
-                    subMesh.surface.Y = subMesh.surface.VERT(:,2);
-                    subMesh.surface.Z = subMesh.surface.VERT(:,3);
+            subMesh = shapeSource;
+            subMesh.surface.VERT = shapeSource.surface.VERT;
+            subMesh.surface.TRIV = shapeSource.surface.TRIV(matching_faces, :);
 
-                    % Plot the submesh as red points
-                    %scatter3(subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 5, 'filled', 'red');
-                    hold on ;
-                    % Plot the submesh with black edges
-                    trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
-                    axis equal;
-             end
+            subMesh.surface.X = subMesh.surface.VERT(:,1);
+            subMesh.surface.Y = subMesh.surface.VERT(:,2);
+            subMesh.surface.Z = subMesh.surface.VERT(:,3);
+
+            %scatter3(shapeSource.surface.VERT(:,1), shapeSource.surface.VERT(:,2), shapeSource.surface.VERT(:,3), 5, 'filled', 'red');
+            trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
+
+            figure
+            axis equal
+            hold on;
+            meshTarget = visualize_map_on_source(shapeSource, shapeTarget, T_source2target_bcicp); title('Target with registered segment in black');
+            meshTarget.FaceAlpha = 1;
+
+            % Add the segment to the target shape in black mesh
+            % Retrieve the indices of the vertices of the segment to display
+            curIndices = curPairShapes.segmentations_source{segment_to_show};
+            curIndices = unique(curIndices(:));
+
+            % Retrieve the registration transform for the segment to display
+            curTransform = curPairShapes.registrations_source_to_target{nbMethod}{segment_to_show};
+
+            shapeSourceCopy = shapeSource;
+            % Apply the transform to whole shape
+            %curArray= shapeTargetCopy.surface.VERT(curIndices,:);
+            curArray= shapeSourceCopy.surface.VERT;
+            curPointCloud = pointCloud(curArray);
+            curMovedPointCloud= pctransform(curPointCloud, (curTransform));
+            curArrayMoved = curMovedPointCloud.Location;
+            %shapeTargetCopy.surface.VERT(curIndices,:) = curArrayMoved;
+            shapeSourceCopy.surface.VERT = curArrayMoved;
+
+            % Apply same rigid transform to every component of the shape surface
+            shapeSourceCopy.surface.X = curArrayMoved(:,1);
+            shapeSourceCopy.surface.Y = curArrayMoved(:,2);
+            shapeSourceCopy.surface.Z = curArrayMoved(:,3);
+
+            % Extract a submesh from the main mesh
+            subMeshIndices = curPairShapes.segmentations_source{segment_to_show};
+
+            matching_faces = []; % Initialize an empty list to store matching face indices
+            % Iterate through each face in the trimesh
+            for k = 1:size(shapeSource.surface.TRIV, 1)
+                face = shapeSource.surface.TRIV(k, :); % Get the vertices of the current face
+                is_matching = true; % Assume the face matches initially
+
+                % Check if all vertices of the face are in the vertex list
+                for j = 1:numel(face)
+                    if ~ismember(face(j), subMeshIndices)
+                        is_matching = false; % If any vertex is not in the list, mark as not matching
+                        break; % No need to continue checking vertices
+                    end
+                end
+
+                % If all vertices of the face are in the list, add its index to the result
+                if is_matching
+                    matching_faces = [matching_faces, k];
+                end
+            end
+
+            subMesh = shapeSourceCopy;
+            subMesh.surface.VERT = shapeSourceCopy.surface.VERT;
+            subMesh.surface.TRIV = shapeSourceCopy.surface.TRIV(matching_faces, :);
+
+            subMesh.surface.X = subMesh.surface.VERT(:,1);
+            subMesh.surface.Y = subMesh.surface.VERT(:,2);
+            subMesh.surface.Z = subMesh.surface.VERT(:,3);
+
+            % Plot the submesh as red points
+            %scatter3(subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 5, 'filled', 'red');
+            hold on ;
+            % Plot the submesh with black edges
+            trisurf(subMesh.surface.TRIV, subMesh.surface.VERT(:,1), subMesh.surface.VERT(:,2), subMesh.surface.VERT(:,3), 'FaceColor', 'none', 'EdgeColor', 'black');
+            axis equal;
+        end
         %% Display the errors on each component of the registration for each pair of shapes and each method
 
         % Update the final error figure by plotting all the errors stored in the mean_errors_array
@@ -771,173 +771,173 @@ for curNoiseValue = noiseMagnitudeVec
 
         drawnow
 
-    
 
-    %% On a new figure, take the first pair of shapes and display the following figures:
-    % Figure 1: the source shape with the drilling paths. All the drilling paths are displayed in the same color (blue)
-    % Figure 2: the target shape with the drilling paths. The target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
-    %            All the drilling paths are displayed in the same color (red)
-    % Figure 3: the target shape with both the ground truth drilling paths and the computed drilling paths. The ground truth drilling paths are displayed in blue and the computed drilling paths are displayed in red.
-    %            Again, the target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
-    % Overall, this allows to visualize with the same camera view the source shape, the target shape and the drilling paths on both shapes and to easily compare the ground truth drilling paths and the computed drilling paths.
 
-   
-    groundTruthTrajColor = [0 0 1];
-    computedTrajColor = [1 0 0];
+        %% On a new figure, take the first pair of shapes and display the following figures:
+        % Figure 1: the source shape with the drilling paths. All the drilling paths are displayed in the same color (blue)
+        % Figure 2: the target shape with the drilling paths. The target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
+        %            All the drilling paths are displayed in the same color (red)
+        % Figure 3: the target shape with both the ground truth drilling paths and the computed drilling paths. The ground truth drilling paths are displayed in blue and the computed drilling paths are displayed in red.
+        %            Again, the target shape is transformed by applied the inverse of the ground truth transform to bring it back to the source shape.
+        % Overall, this allows to visualize with the same camera view the source shape, the target shape and the drilling paths on both shapes and to easily compare the ground truth drilling paths and the computed drilling paths.
 
-    % Take the first pair of shapes
-    curPairShapes = pairs_array{i};
 
-    % ==============================
-    % ==============================
-    fig1 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 1 - Plan on source shape'],'NumberTitle','off');
-    % Display the source shape with the drilling paths
-  
-    view(0,-50);
-    hold on;
-    title('Plan on source shape');
-    display_shape(curPairShapes.shape_source);
-    hold on;
-    % Display the drilling paths on the source shape
-    
-    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
-        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
-        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
-        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+        groundTruthTrajColor = [0 0 1];
+        computedTrajColor = [1 0 0];
 
-        %plotTrajectory(entryPoint,endPoint, color, radius, extensionLengthRatio, parentFigure)
-        
-        plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
-        %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', sourceTrajColor, 'LineWidth', 2);
-    end
+        % Take the first pair of shapes
+        curPairShapes = pairs_array{i};
 
-    % ==============================
-    % ==============================
-    % Display the target shape with the drilling paths
-    % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
-    % Transform the drilling paths by the inverse of the ground truth transform
-    %fig2 = figure('Name', 'Drilling paths comparison 2 - Plan on target shape','NumberTitle','off');
-    fig2 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 2 - Plan on target shape'],'NumberTitle','off');
-    view(10,-15);
-    hold on;
-    
-    targetShape = curPairShapes.shape_target;
-    display_shape(targetShape);
-    title('Target shape with perfectly transferred drilling paths');
+        % ==============================
+        % ==============================
+        fig1 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 1 - Plan on source shape'],'NumberTitle','off');
+        % Display the source shape with the drilling paths
 
-    % Display the drilling paths on the target shape
-    
+        view(0,-50);
+        hold on;
+        title('Plan on source shape');
+        display_shape(curPairShapes.shape_source);
+        hold on;
+        % Display the drilling paths on the source shape
 
-    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
-        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+        for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+            curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+            curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+            curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
 
-        % Identify to which segment the current trajectory belongs
-        for nbSegment=1:size(curPairShapes.segmentations_source,2)
-            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
-                break;
-            end
+            %plotTrajectory(entryPoint,endPoint, color, radius, extensionLengthRatio, parentFigure)
+
+            plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+            %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', sourceTrajColor, 'LineWidth', 2);
         end
 
-        % Retrieve the transform for the current segment
-        curTransform = curPairShapes.registrations_source_to_target{1}{nbSegment};
-        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
-        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+        % ==============================
+        % ==============================
+        % Display the target shape with the drilling paths
+        % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
+        % Transform the drilling paths by the inverse of the ground truth transform
+        %fig2 = figure('Name', 'Drilling paths comparison 2 - Plan on target shape','NumberTitle','off');
+        fig2 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 2 - Plan on target shape'],'NumberTitle','off');
+        view(10,-15);
+        hold on;
 
-        % Apply the transform to the source drilling path to bring it to the target shape
-        curEntry = pctransform(pointCloud(curEntry), curTransform).Location;
-        curEnd = pctransform(pointCloud(curEnd), curTransform).Location;
+        targetShape = curPairShapes.shape_target;
+        display_shape(targetShape);
+        title('Target shape with perfectly transferred drilling paths');
 
-        plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
-        %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
-    end
+        % Display the drilling paths on the target shape
 
-    % ==============================
-    % ==============================
-    % Display the target shape with both the ground truth drilling paths and the computed drilling paths
-    % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
-    % Transform the drilling paths by the inverse of the ground truth transform
-    %fig3 = figure('Name', 'Drilling paths comparison 3 - Transfer to target shape','NumberTitle','off');
-    fig3 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 3 - Transfer to target shape'],'NumberTitle','off');
-    view(10,-15);
-    hold on;
-    title('Target shape with both ground truth and computed drilling paths');
-    display_shape(targetShape);
-    hold on;
 
-    % Display the ground truth drilling paths on the target shape
-    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
-        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
+        for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+            curTraj = curPairShapes.trajectories_source(curTrajNb, :);
 
-        % Identify to which segment the current trajectory belongs
-        for nbSegment=1:size(curPairShapes.segmentations_source,2)
-            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
-                break;
+            % Identify to which segment the current trajectory belongs
+            for nbSegment=1:size(curPairShapes.segmentations_source,2)
+                if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                    break;
+                end
             end
+
+            % Retrieve the transform for the current segment
+            curTransform = curPairShapes.registrations_source_to_target{1}{nbSegment};
+            curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+            curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+
+            % Apply the transform to the source drilling path to bring it to the target shape
+            curEntry = pctransform(pointCloud(curEntry), curTransform).Location;
+            curEnd = pctransform(pointCloud(curEnd), curTransform).Location;
+
+            plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+            %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
         end
 
-        % Compute the transform for the current segment
-        curTransform = curPairShapes.transform_target{nbSegment};
+        % ==============================
+        % ==============================
+        % Display the target shape with both the ground truth drilling paths and the computed drilling paths
+        % Transform the target shape by applying the inverse of the ground truth transform to bring it back to the source shape
+        % Transform the drilling paths by the inverse of the ground truth transform
+        %fig3 = figure('Name', 'Drilling paths comparison 3 - Transfer to target shape','NumberTitle','off');
+        fig3 = figure('Name', [num2str(i) '.' num2str(numCurrentFig) ' - Folder ' curFolderName ' - Drilling paths comparison 3 - Transfer to target shape'],'NumberTitle','off');
+        view(10,-15);
+        hold on;
+        title('Target shape with both ground truth and computed drilling paths');
+        display_shape(targetShape);
+        hold on;
 
-        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
-        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+        % Display the ground truth drilling paths on the target shape
+        for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+            curTraj = curPairShapes.trajectories_source(curTrajNb, :);
 
-        % Apply the transform to the source drilling path to bring it to the target shape
-        curEntry = pctransform(pointCloud(curEntry), curTransform).Location;
-        curEnd = pctransform(pointCloud(curEnd), curTransform).Location;
-
-        plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
-        %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
-    end
-
-    % Display the computed drilling paths on the target shape
-    for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
-        curTraj = curPairShapes.trajectories_source(curTrajNb, :);
-
-        % Find to which segment the current trajectory belongs
-        for nbSegment=1:size(curPairShapes.segmentations_source,2)
-            if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
-                break;
+            % Identify to which segment the current trajectory belongs
+            for nbSegment=1:size(curPairShapes.segmentations_source,2)
+                if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                    break;
+                end
             end
+
+            % Compute the transform for the current segment
+            curTransform = curPairShapes.transform_target{nbSegment};
+
+            curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+            curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+
+            % Apply the transform to the source drilling path to bring it to the target shape
+            curEntry = pctransform(pointCloud(curEntry), curTransform).Location;
+            curEnd = pctransform(pointCloud(curEnd), curTransform).Location;
+
+            plotTrajectory(curEntry, curEnd, groundTruthTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+            %plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', groundTruthTrajColor, 'LineWidth', 2);
         end
 
-        % Get the computed transform for the current segment
-        computedTransform = curPairShapes.registrations_source_to_target{1}{nbSegment};%TBD: fix this! Poser les calculs, l'ordre de multiplcation des matrices pose problème
-        inverseComputedTransform = invert(computedTransform);
+        % Display the computed drilling paths on the target shape
+        for curTrajNb = 1:size(curPairShapes.trajectories_source, 1)
+            curTraj = curPairShapes.trajectories_source(curTrajNb, :);
 
-        % Apply the ground truth transform to the source drilling path to bring it to the target shape
-        curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
-        curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
+            % Find to which segment the current trajectory belongs
+            for nbSegment=1:size(curPairShapes.segmentations_source,2)
+                if any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(1))) && any(ismember(curPairShapes.segmentations_source{nbSegment}, curTraj(2)))
+                    break;
+                end
+            end
 
-        %curEntry = pctransform(pointCloud(curEntry), groundTruthTransform).Location;
-        %curEnd = pctransform(pointCloud(curEnd), groundTruthTransform).Location;
+            % Get the computed transform for the current segment
+            computedTransform = curPairShapes.registrations_source_to_target{1}{nbSegment};%TBD: fix this! Poser les calculs, l'ordre de multiplcation des matrices pose problème
+            inverseComputedTransform = invert(computedTransform);
 
-        % Apply the computed transform to the source drilling path to bring it back to the source shape
-        curEntry = pctransform(pointCloud(curEntry), computedTransform).Location;
-        curEnd = pctransform(pointCloud(curEnd), computedTransform).Location;
+            % Apply the ground truth transform to the source drilling path to bring it to the target shape
+            curEntry = curPairShapes.shape_source.surface.VERT(curTraj(1), :);
+            curEnd = curPairShapes.shape_source.surface.VERT(curTraj(2), :);
 
-        % Compute the transform for the current segment
-        %curRotation = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
+            %curEntry = pctransform(pointCloud(curEntry), groundTruthTransform).Location;
+            %curEnd = pctransform(pointCloud(curEnd), groundTruthTransform).Location;
 
-        %curEntry = pctransform(pointCloud(curEntry), invert(curRotation)).Location;
-        %curEnd = pctransform(pointCloud(curEnd), invert(curRotation)).Location;
+            % Apply the computed transform to the source drilling path to bring it back to the source shape
+            curEntry = pctransform(pointCloud(curEntry), computedTransform).Location;
+            curEnd = pctransform(pointCloud(curEnd), computedTransform).Location;
 
-        % Plot the transformed drilling path
-        plotTrajectory(curEntry, curEnd, computedTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
-        % plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', computedTrajColor, 'LineWidth', 2);
-    end
+            % Compute the transform for the current segment
+            %curRotation = rigidtform3d(makehgtform('zrotate', deg2rad((nbSegment-1)*angleTorsionVertebra))); % rotate around z axis by (i-1)*5 degrees
 
-    %Export the 3 figures to a single folder named 'drilling_paths_comparison' with the noise value combined in the name
-    folderName = ['.\results\drilling_paths_comparison_noise_' num2str(curNoiseValue)];
-    mkdir(folderName);
-    figureList = [fig1 fig2 fig3];
-    for iFig = 1:length(figureList)
-        FigHandle = figureList(iFig);
-        FigName   = [FigHandle.Name];
-        set(0, 'CurrentFigure', FigHandle);
-    
-        saveas(FigHandle, fullfile(folderName,  [FigName '.png']));
-        savefig(fullfile(folderName, [FigName '.fig']));
-    end
+            %curEntry = pctransform(pointCloud(curEntry), invert(curRotation)).Location;
+            %curEnd = pctransform(pointCloud(curEnd), invert(curRotation)).Location;
+
+            % Plot the transformed drilling path
+            plotTrajectory(curEntry, curEnd, computedTrajColor, trajectoryWidth, extensionLengthRatio); %LineWidth: 1 point is 0,352806 mm so 6 mm is 17 points
+            % plot3([curEntry(1) curEnd(1)], [curEntry(2) curEnd(2)], [curEntry(3) curEnd(3)], 'Color', computedTrajColor, 'LineWidth', 2);
+        end
+
+        %Export the 3 figures to a single folder named 'drilling_paths_comparison' with the noise value combined in the name
+        folderName = ['.\results\drilling_paths_comparison_noise_' num2str(curNoiseValue)];
+        mkdir(folderName);
+        figureList = [fig1 fig2 fig3];
+        for iFig = 1:length(figureList)
+            FigHandle = figureList(iFig);
+            FigName   = [FigHandle.Name];
+            set(0, 'CurrentFigure', FigHandle);
+
+            saveas(FigHandle, fullfile(folderName,  [FigName '.png']));
+            savefig(fullfile(folderName, [FigName '.fig']));
+        end
 
     end
 
@@ -1074,6 +1074,6 @@ for curNoiseValue = noiseMagnitudeVec
     %% Save all data
     save(['results\all_data_noise_' num2str(curNoiseValue) '.mat']);
 
-    end
+end
 %% Check memory
 memory
